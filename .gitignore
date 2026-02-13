@@ -1,0 +1,24 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Environment variables
+.env
+
+# Data files
+workstreams.json
+workstreams_backup_*.json
+workstreams_manual_backup_*.json
+
+# PDM (old package manager)
+.pdm-python
+
+# Claude Code
+.claude/

@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pioj</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --bg-primary: #f4f5f7;
+            --bg-secondary: white;
+            --bg-tertiary: #f4f5f7;
+            --text-primary: #172b4d;
+            --text-secondary: #5e6c84;
+            --border-color: #dfe1e6;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
+            --color-primary: #0052cc;
+            --color-primary-hover: #0747a6;
+            --color-secondary: #6554c0;
+            --color-secondary-hover: #5243aa;
+            --swimlane-header-start: #0052cc;
+            --swimlane-header-end: #0747a6;
+        }
+
+        body.dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #404040;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-hover: 0 4px 8px rgba(0,0,0,0.4);
+            --color-primary: #4c9aff;
+            --color-primary-hover: #6bb3ff;
+            --color-secondary: #6554c0;
+            --color-secondary-hover: #7968d0;
+            --swimlane-header-start: #4a4a4a;
+            --swimlane-header-end: #5a5a5a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: var(--bg-primary);
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 20px 10px 20px;
+            border-radius: 0;
+            margin: 0;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-wrapper {
+            padding: 0 20px 20px 20px;
+        }
+
+        .header h1 {
+            color: var(--text-primary);
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .connection-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .jira-host {
+            color: #00875a;
+        }
+
+        .jira-error {
+            color: #de350b;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .config-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        button {
+            padding: 8px 16px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: var(--color-primary-hover);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: var(--color-secondary);
+        }
+
+        button.secondary:hover {
+            background: var(--color-secondary-hover);
+        }
+
+        button.danger {
+            background: #de350b;
+        }
+
+        button.danger:hover {
+            background: #bf2600;
+        }
+
+        .controls {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .workstreams-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .swimlane {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .swimlane-header {
+            background: linear-gradient(135deg, var(--swimlane-header-start) 0%, var(--swimlane-header-end) 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .swimlane-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .swimlane-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .swimlane-controls button {
+            padding: 4px 12px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .swimlane-controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .swimlane-body {
+            padding: 15px;
+        }
+
+        .swimlane-config {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .swimlane-config textarea {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .tickets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .kanban-board {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .kanban-column {
+            flex: 1;
+            min-width: 280px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .kanban-column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .kanban-column-title {
+            font-size: 14px;
+        }
+
+        .kanban-column-count {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .kanban-tickets {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sub-swimlane {
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .sub-swimlane-header {
+            background: var(--bg-tertiary);
+            padding: 8px 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sub-swimlane-body {
+            background: var(--bg-secondary);
+            padding: 10px;
+        }
+
+        .group-by-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .group-by-toggle input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .group-by-toggle label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .group-by-options {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .group-by-options.hidden {
+            display: none;
+        }
+
+        .grouping-options {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            padding: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .view-toggle button {
+            padding: 4px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .view-toggle button:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .view-toggle button.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .table-view {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: var(--bg-secondary);
+        }
+
+        .table-view thead {
+            background: var(--bg-tertiary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .table-view th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table-view th.status-column {
+            width: 120px;
+        }
+
+        .table-view th.key-column {
+            width: 120px;
+        }
+
+        .table-view th.assignee-column {
+            width: 150px;
+        }
+
+        .table-view th.points-column {
+            width: 60px;
+            text-align: center;
+        }
+
+        .table-view th.duration-column {
+            width: 80px;
+            text-align: center;
+        }
+
+        .table-view th.resolution-column {
+            width: 120px;
+        }
+
+        .table-duration,
+        .table-since {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .table-resolution {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .ticket-duration,
+        .ticket-since {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .ticket-resolution {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .table-view tbody tr {
+            border-bottom: 1px solid #f4f5f7;
+            transition: background 0.2s;
+        }
+
+        .table-view tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .table-view td {
+            padding: 8px 12px;
+            color: var(--text-primary);
+        }
+
+        .table-key {
+            color: var(--color-primary);
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .table-key:hover {
+            text-decoration: underline;
+        }
+
+        .table-summary {
+            color: var(--text-primary);
+        }
+
+        .table-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .table-assignee {
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .table-points {
+            text-align: center;
+            font-weight: 600;
+            color: #ff991f;
+        }
+
+        .table-view-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .table-empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .last-updated {
+            font-size: 10px;
+            color: #6b778c;
+            text-align: right;
+            padding: 8px 12px;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .tree-view {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .tree-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tree-controls.hidden {
+            display: none;
+        }
+
+        .tree-control-button {
+            padding: 4px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .tree-control-button:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+        }
+
+        .tree-node {
+            margin: 4px 0;
+        }
+
+        .tree-node-content {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: 3px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .tree-node-content:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .tree-indent {
+            display: inline-block;
+            width: 20px;
+        }
+
+        .tree-toggle {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .tree-icon {
+            margin-right: 6px;
+            font-size: 14px;
+        }
+
+        .tree-key {
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-right: 8px;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .tree-key:hover {
+            text-decoration: underline;
+        }
+
+        .tree-summary {
+            color: var(--text-primary);
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .tree-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            margin-left: 8px;
+        }
+
+        .tree-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+
+        .tree-children {
+            margin-left: 20px;
+            border-left: 1px solid var(--border-color);
+            padding-left: 10px;
+        }
+
+        .tree-link-label {
+            font-size: 11px;
+            color: #6b778c;
+            font-style: italic;
+            margin-left: 20px;
+            padding: 4px 0;
+        }
+
+        .tree-empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .tree-node-not-in-query {
+            opacity: 0.7;
+        }
+
+        .tree-node-not-in-query .tree-key,
+        .tree-node-not-in-query .tree-summary,
+        .tree-node-not-in-query .tree-meta {
+            color: #6b778c;
+            font-style: italic;
+        }
+
+        .tree-node-not-in-query .tree-status {
+            opacity: 0.75;
+        }
+
+        .ticket-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 12px;
+            transition: all 0.2s;
+        }
+
+        .ticket-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .ticket-key {
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-bottom: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+
+        .ticket-key:hover {
+            text-decoration: underline;
+        }
+
+        .ticket-summary {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .ticket-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .ticket-status {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .status-new {
+            background: #6554c0;
+        }
+
+        .status-indeterminate {
+            background: var(--color-primary);
+        }
+
+        .status-review {
+            background: #ff991f;
+        }
+
+        .status-done {
+            background: #00875a;
+        }
+
+        .status-other {
+            background: #5e6c84;
+        }
+
+        .ticket-assignee {
+            color: var(--text-secondary);
+        }
+
+        .ticket-story-points {
+            background: #ff991f;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .error {
+            background: #ffebe6;
+            color: #bf2600;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            background: #e3fcef;
+            color: #006644;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .modal-content .form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-indicator.connected {
+            background: #00875a;
+        }
+
+        .status-indicator.disconnected {
+            background: #de350b;
+        }
+
+        .ticket-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .jql-examples {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .jql-examples strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .jql-examples code {
+            display: block;
+            background: var(--bg-secondary);
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin: 4px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .quick-nav {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .quick-nav h3 {
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .quick-nav-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-nav-item {
+            background: var(--bg-tertiary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .quick-nav-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .quick-nav-item .count {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        .reorder-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .reorder-buttons button {
+            padding: 2px 8px;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .tabs-container {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .tabs-header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .tabs {
+            display: flex;
+            flex: 1;
+            overflow-x: auto;
+            gap: 2px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: rgba(0, 82, 204, 0.05);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--color-primary);
+            background: var(--bg-secondary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab .tab-close {
+            margin-left: 8px;
+            color: var(--text-secondary);
+            font-weight: bold;
+            display: none;
+        }
+
+        .tab:hover .tab-close {
+            display: inline;
+        }
+
+        .tab .tab-close:hover {
+            color: #de350b;
+        }
+
+        .tab-actions {
+            padding: 8px 12px;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .tab-actions button {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            pioj
+            <span class="connection-info">
+                <span id="connectionStatus" class="status-indicator disconnected"></span>
+                <span id="configStatus"></span>
+            </span>
+        </h1>
+        <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+            <span class="theme-icon">🌙</span>
+        </button>
+    </div>
+
+    <div class="content-wrapper">
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <div id="tabsContainer" class="tabs"></div>
+            <div class="tab-actions">
+                <button class="secondary" onclick="openAddPageModal()">+ New Page</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="secondary" onclick="openAddWorkstreamModal()">Add Workstream</button>
+        <button onclick="refreshAll()">Refresh All</button>
+        <button onclick="exportConfiguration()">Export Config</button>
+        <button onclick="document.getElementById('importConfigFile').click()">Import Config</button>
+        <input type="file" id="importConfigFile" accept=".json" style="display: none;" onchange="importConfiguration(event)">
+        <button class="danger" onclick="clearAll()">Clear All Data</button>
+    </div>
+
+    <div id="quickNav" class="quick-nav" style="display: none;">
+        <h3>Workstreams</h3>
+        <div id="quickNavItems" class="quick-nav-items"></div>
+    </div>
+
+    <div id="workstreamsContainer" class="workstreams-container"></div>
+
+    <div id="addPageModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Page</h2>
+            <div class="form-group">
+                <label for="pageName">Page Name</label>
+                <input type="text" id="pageName" placeholder="e.g., Sprint 42, Backend Team, Q1 Planning">
+                <div class="help-text">Organize your workstreams into different pages/tabs</div>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAddPageModal()">Cancel</button>
+                <button onclick="addPage()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addWorkstreamModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Workstream</h2>
+            <div class="form-group">
+                <label for="workstreamName">Workstream Name</label>
+                <input type="text" id="workstreamName" placeholder="e.g., Backend Team Sprint 23">
+            </div>
+            <div class="form-group">
+                <label for="workstreamJql">JQL Query or Ticket Keys</label>
+                <textarea id="workstreamJql" placeholder="project = PROJ AND assignee = currentUser()"></textarea>
+                <div class="help-text">Enter a JQL query or comma-separated ticket keys (e.g., PROJ-123, PROJ-456)</div>
+            </div>
+            <div class="jql-examples">
+                <strong>JQL Examples:</strong>
+                <code>project = MYPROJ AND status != Done</code>
+                <code>assignee = currentUser() AND sprint in openSprints()</code>
+                <code>project = MYPROJ AND labels = backend</code>
+                <code>PROJ-123, PROJ-456, PROJ-789</code>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAddWorkstreamModal()">Cancel</button>
+                <button onclick="addWorkstream()">Add</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        let config = {
+            host: ''
+        };
+
+        let data = {
+            pages: [],
+            currentPageId: null
+        };
+        let isConnected = false;
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.querySelector('.theme-icon');
+
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.add('dark-mode');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.querySelector('.theme-icon');
+
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        async function init() {
+            loadTheme();
+            await checkConfig();
+            await loadWorkstreams();
+            renderTabs();
+            renderWorkstreams();
+        }
+
+        function getCurrentPage() {
+            return data.pages.find(p => p.id === data.currentPageId);
+        }
+
+        function getCurrentWorkstreams() {
+            const page = getCurrentPage();
+            return page ? page.workstreams : [];
+        }
+
+        async function checkConfig() {
+            const statusDiv = document.getElementById('configStatus');
+
+            try {
+                const response = await fetch(`${API_BASE}/config/status`);
+                const data = await response.json();
+
+                if (data.configured) {
+                    config.host = data.host;
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    statusDiv.innerHTML = `<span class="jira-host">Connected to JIRA: ${data.host}</span>`;
+                } else {
+                    statusDiv.innerHTML = '<span class="jira-error">JIRA not configured. Please create a .env file on the server.</span>';
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Error: ${error.message}. Is the server running?</div>`;
+                isConnected = false;
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('connectionStatus');
+            indicator.className = `status-indicator ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        async function loadWorkstreams() {
+            try {
+                // First, try to load from localStorage as backup
+                const localBackup = localStorage.getItem('workstreams');
+
+                const response = await fetch(`${API_BASE}/workstreams`);
+                if (response.ok) {
+                    const serverData = await response.json();
+
+                    // Check if data is in new format (with pages)
+                    if (serverData.pages && serverData.pages.length > 0) {
+                        data = serverData;
+                        console.log('Loaded data from server (new format)');
+                    } else if (serverData.workstreams && serverData.workstreams.length > 0) {
+                        // Migrate old format to new format
+                        data.pages = [{
+                            id: Date.now(),
+                            name: 'Main',
+                            workstreams: serverData.workstreams.map(ws => ({
+                                ...ws,
+                                tickets: ws.tickets || undefined  // Preserve existing tickets or set to undefined
+                            }))
+                        }];
+                        data.currentPageId = data.pages[0].id;
+                        await saveWorkstreams();
+                        console.log('Migrated old workstreams format to pages');
+                    } else if (localBackup) {
+                        // Server has no data, try localStorage
+                        try {
+                            const parsed = JSON.parse(localBackup);
+
+                            // Check if it's in new format
+                            if (parsed.pages && parsed.pages.length > 0) {
+                                data = parsed;
+                                await saveWorkstreams();
+                                console.log('Recovered data from localStorage backup (new format)');
+                            } else if (Array.isArray(parsed) && parsed.length > 0) {
+                                // Old format in localStorage
+                                data.pages = [{
+                                    id: Date.now(),
+                                    name: 'Main',
+                                    workstreams: parsed.map(ws => ({
+                                        ...ws,
+                                        tickets: ws.tickets || undefined
+                                    }))
+                                }];
+                                data.currentPageId = data.pages[0].id;
+                                await saveWorkstreams();
+                                console.log('Recovered and migrated workstreams from localStorage');
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse localStorage:', e);
+                        }
+                    }
+
+                    // Ensure we have at least one page
+                    if (!data.pages || data.pages.length === 0) {
+                        data.pages = [{
+                            id: Date.now(),
+                            name: 'Main',
+                            workstreams: []
+                        }];
+                        data.currentPageId = data.pages[0].id;
+                    }
+
+                    // Ensure workstreams have proper ticket initialization
+                    data.pages.forEach(page => {
+                        if (page.workstreams) {
+                            page.workstreams.forEach(ws => {
+                                if (!ws.hasOwnProperty('tickets')) {
+                                    ws.tickets = undefined;
+                                }
+                            });
+                        }
+                    });
+
+                    // Ensure currentPageId is valid
+                    if (!data.currentPageId || !data.pages.find(p => p.id === data.currentPageId)) {
+                        data.currentPageId = data.pages[0].id;
+                    }
+                } else {
+                    console.error('Failed to load workstreams from server');
+                    // Try localStorage recovery
+                    if (localBackup) {
+                        const parsed = JSON.parse(localBackup);
+                        if (parsed.pages) {
+                            data = parsed;
+                        } else if (Array.isArray(parsed)) {
+                            data.pages = [{
+                                id: Date.now(),
+                                name: 'Main',
+                                workstreams: parsed
+                            }];
+                            data.currentPageId = data.pages[0].id;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading workstreams:', error);
+                // Try localStorage as last resort
+                try {
+                    const localBackup = localStorage.getItem('workstreams');
+                    if (localBackup) {
+                        const parsed = JSON.parse(localBackup);
+                        if (parsed.pages) {
+                            data = parsed;
+                        } else if (Array.isArray(parsed)) {
+                            data.pages = [{
+                                id: Date.now(),
+                                name: 'Main',
+                                workstreams: parsed.map(ws => ({
+                                    ...ws,
+                                    tickets: ws.tickets || undefined
+                                }))
+                            }];
+                            data.currentPageId = data.pages[0].id;
+                        }
+                        console.log('Recovered from localStorage after error');
+                    }
+                } catch (e) {
+                    console.error('Failed localStorage recovery:', e);
+                }
+
+                // Final fallback
+                if (!data.pages || data.pages.length === 0) {
+                    data.pages = [{
+                        id: Date.now(),
+                        name: 'Main',
+                        workstreams: []
+                    }];
+                    data.currentPageId = data.pages[0].id;
+                }
+            }
+        }
+
+        async function saveWorkstreams() {
+            // Always save to localStorage first (backup)
+            try {
+                localStorage.setItem('workstreams', JSON.stringify(data));
+                localStorage.setItem('workstreams_backup_' + Date.now(), JSON.stringify(data));
+
+                // Keep only last 5 backups
+                const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('workstreams_backup_'));
+                if (backupKeys.length > 5) {
+                    backupKeys.sort().slice(0, backupKeys.length - 5).forEach(k => localStorage.removeItem(k));
+                }
+            } catch (e) {
+                console.error('Failed to save to localStorage:', e);
+            }
+
+            // Save to server
+            try {
+                const response = await fetch(`${API_BASE}/workstreams`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to save workstreams to server');
+                }
+            } catch (error) {
+                console.error('Error saving workstreams:', error);
+            }
+        }
+
+        function openAddPageModal() {
+            document.getElementById('addPageModal').classList.add('active');
+            document.getElementById('pageName').value = '';
+        }
+
+        function closeAddPageModal() {
+            document.getElementById('addPageModal').classList.remove('active');
+        }
+
+        function addPage() {
+            const name = document.getElementById('pageName').value.trim();
+
+            if (!name) {
+                alert('Please enter a page name');
+                return;
+            }
+
+            const newPage = {
+                id: Date.now(),
+                name: name,
+                workstreams: []
+            };
+
+            data.pages.push(newPage);
+            data.currentPageId = newPage.id;
+
+            saveWorkstreams();
+            closeAddPageModal();
+            renderTabs();
+            renderWorkstreams();
+        }
+
+        function switchPage(pageId) {
+            data.currentPageId = pageId;
+            saveWorkstreams();
+            renderTabs();
+            renderWorkstreams();
+        }
+
+        function deletePage(pageId, event) {
+            event.stopPropagation();
+
+            if (data.pages.length === 1) {
+                alert('Cannot delete the last page');
+                return;
+            }
+
+            const page = data.pages.find(p => p.id === pageId);
+            if (page && page.workstreams.length > 0) {
+                if (!confirm(`Delete page "${page.name}" and its ${page.workstreams.length} workstream(s)?`)) {
+                    return;
+                }
+            }
+
+            data.pages = data.pages.filter(p => p.id !== pageId);
+
+            if (data.currentPageId === pageId) {
+                data.currentPageId = data.pages[0].id;
+            }
+
+            saveWorkstreams();
+            renderTabs();
+            renderWorkstreams();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabsContainer');
+
+            container.innerHTML = data.pages.map(page => `
+                <button class="tab ${page.id === data.currentPageId ? 'active' : ''}" onclick="switchPage(${page.id})">
+                    ${escapeHtml(page.name)}
+                    ${data.pages.length > 1 ? `<span class="tab-close" onclick="deletePage(${page.id}, event)">×</span>` : ''}
+                </button>
+            `).join('');
+        }
+
+        function openAddWorkstreamModal() {
+            document.getElementById('addWorkstreamModal').classList.add('active');
+            document.getElementById('workstreamName').value = '';
+            document.getElementById('workstreamJql').value = '';
+        }
+
+        function closeAddWorkstreamModal() {
+            document.getElementById('addWorkstreamModal').classList.remove('active');
+        }
+
+        function addWorkstream() {
+            const name = document.getElementById('workstreamName').value.trim();
+            const jql = document.getElementById('workstreamJql').value.trim();
+
+            if (!name || !jql) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const page = getCurrentPage();
+            if (!page) {
+                alert('No page selected');
+                return;
+            }
+
+            page.workstreams.push({
+                id: Date.now(),
+                name: name,
+                jql: jql,
+                tickets: undefined  // undefined means not yet refreshed
+            });
+
+            saveWorkstreams();
+            closeAddWorkstreamModal();
+            renderWorkstreams();
+            refreshWorkstream(page.workstreams.length - 1);
+        }
+
+        function deleteWorkstream(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            if (confirm('Are you sure you want to delete this workstream?')) {
+                page.workstreams.splice(index, 1);
+                saveWorkstreams();
+                renderWorkstreams();
+            }
+        }
+
+        function renderWorkstreams() {
+            const container = document.getElementById('workstreamsContainer');
+            const quickNav = document.getElementById('quickNav');
+            const quickNavItems = document.getElementById('quickNavItems');
+
+            const page = getCurrentPage();
+            if (!page) {
+                container.innerHTML = '<div class="empty-state"><h3>No page selected</h3></div>';
+                quickNav.style.display = 'none';
+                return;
+            }
+
+            const workstreams = page.workstreams;
+
+            if (workstreams.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No workstreams defined</h3><p>Click "Add Workstream" to get started</p></div>';
+                quickNav.style.display = 'none';
+                return;
+            }
+
+            // Render quick navigation
+            quickNav.style.display = 'block';
+            quickNavItems.innerHTML = workstreams.map((ws, index) => `
+                <a href="#workstream-${ws.id}" class="quick-nav-item">
+                    ${escapeHtml(ws.name)}
+                    ${ws.tickets !== undefined ? `<span class="count">(${ws.tickets.length})</span>` : ''}
+                </a>
+            `).join('');
+
+            // Render workstreams
+            container.innerHTML = workstreams.map((ws, index) => {
+                let ticketStats = '';
+                if (ws.tickets && ws.tickets.length > 0) {
+                    const total = ws.tickets.length;
+                    const done = ws.tickets.filter(t => t.statusCategory === 'done').length;
+                    const percentage = Math.round((done / total) * 100);
+                    ticketStats = `<span class="ticket-count">${total} tickets • ${percentage}% done</span>`;
+                }
+
+                return `
+                <div class="swimlane" id="workstream-${ws.id}">
+                    <div class="swimlane-header">
+                        <h3>
+                            ${escapeHtml(ws.name)}
+                            ${ticketStats}
+                        </h3>
+                        <div class="swimlane-controls">
+                            <div class="reorder-buttons">
+                                <button onclick="moveWorkstream(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Move up">↑</button>
+                                <button onclick="moveWorkstream(${index}, 1)" ${index === workstreams.length - 1 ? 'disabled' : ''} title="Move down">↓</button>
+                            </div>
+                            <button onclick="refreshWorkstream(${index})">Refresh</button>
+                            <button onclick="exportWorkstream(${index})">Export CSV</button>
+                            <button onclick="editWorkstream(${index})">Edit</button>
+                            <button onclick="deleteWorkstream(${index})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="swimlane-body">
+                        <div class="swimlane-config">
+                            <strong>Query:</strong>
+                            <textarea readonly>${escapeHtml(ws.jql)}</textarea>
+                            <div class="grouping-options">
+                                <div class="view-toggle">
+                                    <button class="${!ws.view || ws.view === 'cards' ? 'active' : ''}" onclick="setView(${index}, 'cards')">Cards</button>
+                                    <button class="${ws.view === 'compact' ? 'active' : ''}" onclick="setView(${index}, 'compact')">Table</button>
+                                    <button class="${ws.view === 'tree' ? 'active' : ''}" onclick="setView(${index}, 'tree')">Tree</button>
+                                </div>
+                                <div class="group-by-options ${ws.view === 'tree' ? 'hidden' : ''}">
+                                    <div class="group-by-toggle">
+                                        <input type="checkbox" id="groupByEpic-${index}" ${ws.groupBy === 'epic' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'epic')">
+                                        <label for="groupByEpic-${index}">Group by Epic</label>
+                                    </div>
+                                    <div class="group-by-toggle">
+                                        <input type="checkbox" id="groupByParent-${index}" ${ws.groupBy === 'parent' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'parent')">
+                                        <label for="groupByParent-${index}">Group by Parent Link</label>
+                                    </div>
+                                    <div class="group-by-toggle">
+                                        <input type="checkbox" id="groupByAssignee-${index}" ${ws.groupBy === 'assignee' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'assignee')">
+                                        <label for="groupByAssignee-${index}">Group by Assignee</label>
+                                    </div>
+                                </div>
+                                <div class="tree-controls ${ws.view === 'tree' ? '' : 'hidden'}">
+                                    <button onclick="expandAllTreeNodes()" class="tree-control-button">Expand All</button>
+                                    <button onclick="collapseAllTreeNodes()" class="tree-control-button">Collapse All</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="workstream-content-${index}">
+                            ${
+                                ws.tickets === undefined
+                                    ? '<div class="empty-state">Click Refresh to load tickets</div>'
+                                    : ws.tickets.length === 0
+                                        ? '<div class="empty-state">No tickets found</div>'
+                                        : renderTicketsHTML(ws.tickets, ws.groupBy, ws.view)
+                            }
+                        </div>
+                        ${ws.lastUpdated ? `<div class="last-updated">Last updated: ${formatTimestamp(ws.lastUpdated)}</div>` : ''}
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function editWorkstream(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+
+            // Open modal first
+            document.getElementById('addWorkstreamModal').classList.add('active');
+
+            // Then set values (after modal is opened)
+            document.getElementById('workstreamName').value = ws.name;
+            document.getElementById('workstreamJql').value = ws.jql;
+
+            const modal = document.getElementById('addWorkstreamModal');
+            const title = modal.querySelector('h2');
+            const addButton = modal.querySelector('.modal-actions button:last-child');
+
+            title.textContent = 'Edit Workstream';
+            addButton.textContent = 'Update';
+            addButton.onclick = () => {
+                ws.name = document.getElementById('workstreamName').value.trim();
+                ws.jql = document.getElementById('workstreamJql').value.trim();
+                saveWorkstreams();
+                closeAddWorkstreamModal();
+                renderWorkstreams();
+
+                title.textContent = 'Add Workstream';
+                addButton.textContent = 'Add';
+                addButton.onclick = addWorkstream;
+            };
+        }
+
+        async function refreshWorkstream(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const workstream = page.workstreams[index];
+            const container = document.getElementById(`workstream-content-${index}`);
+
+            if (!isConnected) {
+                container.innerHTML = '<div class="error">Please connect to JIRA first</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="loading">Loading tickets...</div>';
+
+            try {
+                const tickets = await fetchTickets(workstream.jql);
+                workstream.tickets = tickets;
+                workstream.lastUpdated = new Date().toISOString();
+                saveWorkstreams();
+                container.innerHTML = renderTicketsHTML(tickets, workstream.groupBy, workstream.view);
+                renderWorkstreams();
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function moveWorkstream(index, direction) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= page.workstreams.length) {
+                return;
+            }
+
+            // Swap workstreams
+            const temp = page.workstreams[index];
+            page.workstreams[index] = page.workstreams[newIndex];
+            page.workstreams[newIndex] = temp;
+
+            saveWorkstreams();
+            renderWorkstreams();
+        }
+
+        async function fetchTickets(query) {
+            const isTicketKeys = !query.includes('=') && !query.includes('AND') && !query.includes('OR');
+
+            if (isTicketKeys) {
+                const keys = query.split(',').map(k => k.trim()).filter(k => k);
+                const tickets = [];
+
+                for (const key of keys) {
+                    try {
+                        const response = await fetch(`${API_BASE}/issue/${key}`);
+                        if (response.ok) {
+                            const ticket = await response.json();
+                            tickets.push(ticket);
+                        }
+                    } catch (error) {
+                        console.error(`Failed to fetch ${key}:`, error);
+                    }
+                }
+
+                return tickets;
+            } else {
+                const response = await fetch(`${API_BASE}/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ jql: query })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to fetch tickets');
+                }
+
+                const data = await response.json();
+                return data.tickets;
+            }
+        }
+
+        function toggleGroupBy(index, groupType) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+
+            // If clicking the same type, toggle it off
+            if (ws.groupBy === groupType) {
+                ws.groupBy = null;
+            } else {
+                ws.groupBy = groupType;
+            }
+
+            saveWorkstreams();
+            renderWorkstreams();
+
+            const container = document.getElementById(`workstream-content-${index}`);
+            if (ws.tickets && ws.tickets.length > 0) {
+                container.innerHTML = renderTicketsHTML(ws.tickets, ws.groupBy, ws.view);
+            }
+        }
+
+        function setView(index, viewType) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+            ws.view = viewType;
+
+            saveWorkstreams();
+            renderWorkstreams();
+
+            const container = document.getElementById(`workstream-content-${index}`);
+            if (ws.tickets && ws.tickets.length > 0) {
+                container.innerHTML = renderTicketsHTML(ws.tickets, ws.groupBy, ws.view);
+            }
+        }
+
+        function renderTicketsHTML(tickets, groupBy = null, view = 'cards') {
+            if (tickets.length === 0) {
+                return '<div class="empty-state">No tickets found</div>';
+            }
+
+            if (view === 'tree') {
+                return renderTreeView(tickets);
+            } else if (groupBy === 'epic') {
+                return renderTicketsByEpic(tickets, view);
+            } else if (groupBy === 'parent') {
+                return renderTicketsByParent(tickets, view);
+            } else if (groupBy === 'assignee') {
+                return renderTicketsByAssignee(tickets, view);
+            } else {
+                return renderTicketsByStatus(tickets, view);
+            }
+        }
+
+        function renderTicketsByEpic(tickets, view = 'cards') {
+            // Group tickets by epic
+            const epicGroups = {};
+            const noEpic = [];
+
+            tickets.forEach(ticket => {
+                if (ticket.epicKey) {
+                    if (!epicGroups[ticket.epicKey]) {
+                        epicGroups[ticket.epicKey] = {
+                            name: ticket.epicName || ticket.epicKey,
+                            tickets: []
+                        };
+                    }
+                    epicGroups[ticket.epicKey].tickets.push(ticket);
+                } else {
+                    noEpic.push(ticket);
+                }
+            });
+
+            let html = '';
+
+            // Render each epic as a sub-swimlane
+            Object.entries(epicGroups).forEach(([epicKey, epic]) => {
+                html += `
+                    <div class="sub-swimlane">
+                        <div class="sub-swimlane-header">
+                            <a href="${config.host}/browse/${epicKey}" target="_blank" style="color: inherit; text-decoration: none;">
+                                🚀 ${escapeHtml(epicKey)}: ${escapeHtml(epic.name)}
+                            </a>
+                            <span style="color: var(--text-secondary); margin-left: 8px;">(${epic.tickets.length})</span>
+                        </div>
+                        <div class="sub-swimlane-body">
+                            ${renderTicketsByStatus(epic.tickets, view)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render tickets without epic
+            if (noEpic.length > 0) {
+                html += `
+                    <div class="sub-swimlane">
+                        <div class="sub-swimlane-header">
+                            📋 No Epic (${noEpic.length})
+                        </div>
+                        <div class="sub-swimlane-body">
+                            ${renderTicketsByStatus(noEpic, view)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        function renderTicketsByParent(tickets, view = 'cards') {
+            // Group tickets by parent
+            const parentGroups = {};
+            const noParent = [];
+
+            tickets.forEach(ticket => {
+                if (ticket.parentKey) {
+                    if (!parentGroups[ticket.parentKey]) {
+                        parentGroups[ticket.parentKey] = {
+                            name: ticket.parentName || ticket.parentKey,
+                            tickets: []
+                        };
+                    }
+                    parentGroups[ticket.parentKey].tickets.push(ticket);
+                } else {
+                    noParent.push(ticket);
+                }
+            });
+
+            let html = '';
+
+            // Render each parent as a sub-swimlane
+            Object.entries(parentGroups).forEach(([parentKey, parent]) => {
+                html += `
+                    <div class="sub-swimlane">
+                        <div class="sub-swimlane-header">
+                            <a href="${config.host}/browse/${parentKey}" target="_blank" style="color: inherit; text-decoration: none;">
+                                📎 ${escapeHtml(parentKey)}: ${escapeHtml(parent.name)}
+                            </a>
+                            <span style="color: var(--text-secondary); margin-left: 8px;">(${parent.tickets.length})</span>
+                        </div>
+                        <div class="sub-swimlane-body">
+                            ${renderTicketsByStatus(parent.tickets, view)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render tickets without parent
+            if (noParent.length > 0) {
+                html += `
+                    <div class="sub-swimlane">
+                        <div class="sub-swimlane-header">
+                            📋 No Parent (${noParent.length})
+                        </div>
+                        <div class="sub-swimlane-body">
+                            ${renderTicketsByStatus(noParent, view)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        function renderTicketsByAssignee(tickets, view = 'cards') {
+            // Group tickets by assignee
+            const assigneeGroups = {};
+
+            tickets.forEach(ticket => {
+                const assignee = ticket.assignee || 'Unassigned';
+                if (!assigneeGroups[assignee]) {
+                    assigneeGroups[assignee] = [];
+                }
+                assigneeGroups[assignee].push(ticket);
+            });
+
+            let html = '';
+
+            // Sort assignees alphabetically, but put Unassigned last
+            const sortedAssignees = Object.keys(assigneeGroups).sort((a, b) => {
+                if (a === 'Unassigned') return 1;
+                if (b === 'Unassigned') return -1;
+                return a.localeCompare(b);
+            });
+
+            // Render each assignee as a sub-swimlane
+            sortedAssignees.forEach(assignee => {
+                const tickets = assigneeGroups[assignee];
+                html += `
+                    <div class="sub-swimlane">
+                        <div class="sub-swimlane-header">
+                            👤 ${escapeHtml(assignee)}
+                            <span style="color: var(--text-secondary); margin-left: 8px;">(${tickets.length})</span>
+                        </div>
+                        <div class="sub-swimlane-body">
+                            ${renderTicketsByStatus(tickets, view)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        function renderTicketsByStatus(tickets, view = 'cards') {
+            // Group tickets by status category
+            const columns = {
+                'new': { title: 'New', tickets: [] },
+                'indeterminate': { title: 'In Progress', tickets: [] },
+                'review': { title: 'Review', tickets: [] },
+                'done': { title: 'Done', tickets: [] }
+            };
+
+            // Categorize tickets
+            tickets.forEach(ticket => {
+                const category = ticket.statusCategory || 'other';
+                // Map status names that contain "review" to review column
+                if (ticket.status && ticket.status.toLowerCase().includes('review')) {
+                    ticket.displayCategory = 'review';
+                    columns['review'].tickets.push(ticket);
+                } else if (columns[category]) {
+                    ticket.displayCategory = category;
+                    columns[category].tickets.push(ticket);
+                } else {
+                    // Default to in progress for unknown statuses
+                    ticket.displayCategory = 'indeterminate';
+                    columns['indeterminate'].tickets.push(ticket);
+                }
+            });
+
+            if (view === 'compact') {
+                return renderCompactView(columns);
+            } else {
+                return renderCardsView(columns);
+            }
+        }
+
+        function renderCardsView(columns) {
+            return `
+                <div class="kanban-board">
+                    ${Object.entries(columns).map(([key, column]) => `
+                        <div class="kanban-column">
+                            <div class="kanban-column-header">
+                                <span class="kanban-column-title">${column.title}</span>
+                                <span class="kanban-column-count">${column.tickets.length}</span>
+                            </div>
+                            <div class="kanban-tickets">
+                                ${column.tickets.length === 0
+                                    ? '<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px;">No tickets</div>'
+                                    : column.tickets.map(ticket => `
+                                        <div class="ticket-card">
+                                            <a href="${config.host}/browse/${ticket.key}" target="_blank" class="ticket-key">
+                                                ${escapeHtml(ticket.key)}
+                                            </a>
+                                            <div class="ticket-summary">${escapeHtml(ticket.summary)}</div>
+                                            <div class="ticket-meta">
+                                                <span class="ticket-status status-${ticket.displayCategory || ticket.statusCategory}">
+                                                    ${escapeHtml(ticket.status)}
+                                                </span>
+                                                <span class="ticket-assignee">👤 ${escapeHtml(ticket.assignee)}</span>
+                                                ${ticket.storyPoints ? `<span class="ticket-story-points">${ticket.storyPoints} SP</span>` : ''}
+                                                ${ticket.statusCategory === 'done' && ticket.resolution ? `<span class="ticket-resolution">${escapeHtml(ticket.resolution)}</span>` : ''}
+                                                ${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? `<span class="ticket-since">${formatSince(ticket.statusChangeDate)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function ensureDisplayCategory(ticket) {
+            if (!ticket.displayCategory && ticket.status) {
+                const category = ticket.statusCategory || 'other';
+                if (ticket.status.toLowerCase().includes('review')) {
+                    ticket.displayCategory = 'review';
+                } else {
+                    ticket.displayCategory = category;
+                }
+            }
+        }
+
+        function renderTreeView(tickets) {
+            if (tickets.length === 0) {
+                return '<div class="tree-empty">No tickets to display</div>';
+            }
+
+            // Build a map of all tickets by key
+            const ticketMap = {};
+            const queryTickets = new Set(); // Track tickets from the original query
+            tickets.forEach(ticket => {
+                ensureDisplayCategory(ticket);
+                ticketMap[ticket.key] = ticket;
+                queryTickets.add(ticket.key);
+            });
+
+            // Build virtual epic/parent nodes if they don't exist in the ticket list
+            const virtualNodes = createVirtualNodes(tickets, ticketMap);
+
+            // Merge virtual nodes with ticket map
+            Object.assign(ticketMap, virtualNodes);
+
+            // Build hierarchy (this already filters out tickets that appear as children)
+            const hierarchyResult = buildTreeHierarchy(tickets, ticketMap, virtualNodes);
+
+            return `
+                <div class="tree-view">
+                    ${renderTreeNodes(hierarchyResult.roots, ticketMap, 0, hierarchyResult.claimedByLinks, queryTickets)}
+                </div>
+            `;
+        }
+
+        function renderTreeNodes(nodes, ticketMap, level, claimedByLinks, queryTickets) {
+            return nodes.map(ticket => renderTreeNode(ticket, ticketMap, level, claimedByLinks, queryTickets)).join('');
+        }
+
+        function renderTreeNode(ticket, ticketMap, level, claimedByLinks, queryTickets) {
+            const hasChildren = hasTicketChildren(ticket, ticketMap);
+            const toggleId = `toggle-${ticket.key.replace(/[^a-zA-Z0-9]/g, '_')}-${level}`;
+            // Grey out tickets (including virtual nodes) that aren't in the query
+            const notInQuery = !queryTickets.has(ticket.key);
+
+            // Ensure ticket has displayCategory set (in case it's a virtual node or wasn't processed earlier)
+            ensureDisplayCategory(ticket);
+
+            // Determine status display
+            const statusHtml = ticket.isVirtual
+                ? ''
+                : `<span class="tree-status status-${ticket.displayCategory || ticket.statusCategory}">
+                    ${escapeHtml(ticket.status)}
+                </span>`;
+
+            let html = `
+                <div class="tree-node" style="margin-left: ${level * 20}px;">
+                    <div class="tree-node-content${notInQuery ? ' tree-node-not-in-query' : ''}">
+                        ${hasChildren
+                            ? `<span class="tree-toggle" onclick="toggleTreeNode('${toggleId}')">▼</span>`
+                            : '<span class="tree-toggle">•</span>'}
+                        <span class="tree-icon">${getTicketIcon(ticket)}</span>
+                        <a href="${config.host}/browse/${ticket.key}" target="_blank" class="tree-key">
+                            ${escapeHtml(ticket.key)}
+                        </a>
+                        <span class="tree-summary">${escapeHtml(ticket.summary)}</span>
+                        ${statusHtml}
+                        <span class="tree-meta">
+                            ${escapeHtml(ticket.assignee)}
+                            ${ticket.storyPoints ? ` • ${ticket.storyPoints} SP` : ''}
+                            ${ticket.statusCategory === 'done' && ticket.resolution ? ` • ${escapeHtml(ticket.resolution)}` : ''}
+                            ${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? ` • ${formatSince(ticket.statusChangeDate)}` : ''}
+                        </span>
+                    </div>
+                    ${hasChildren ? `<div id="${toggleId}" class="tree-children">${renderTicketChildren(ticket, ticketMap, level, claimedByLinks, queryTickets)}</div>` : ''}
+                </div>
+            `;
+
+            return html;
+        }
+
+        function createVirtualNodes(tickets, ticketMap) {
+            const virtualNodes = {};
+
+            tickets.forEach(ticket => {
+                // Create virtual epic node if epic doesn't exist in tickets
+                if (ticket.epicKey && !ticketMap[ticket.epicKey]) {
+                    virtualNodes[ticket.epicKey] = {
+                        key: ticket.epicKey,
+                        summary: ticket.epicName || ticket.epicKey,
+                        status: 'Unknown',
+                        statusCategory: 'other',
+                        assignee: '-',
+                        type: 'Epic',
+                        isVirtual: true
+                    };
+                }
+
+                // Create virtual parent node if parent doesn't exist in tickets
+                if (ticket.parentKey && !ticketMap[ticket.parentKey] && !virtualNodes[ticket.parentKey]) {
+                    virtualNodes[ticket.parentKey] = {
+                        key: ticket.parentKey,
+                        summary: ticket.parentName || ticket.parentKey,
+                        status: 'Unknown',
+                        statusCategory: 'other',
+                        assignee: '-',
+                        type: 'Story',
+                        isVirtual: true
+                    };
+                }
+            });
+
+            return virtualNodes;
+        }
+
+        function buildTreeHierarchy(tickets, ticketMap, virtualNodes) {
+            const roots = [];
+            const processed = new Set();
+            const claimed = new Set(); // Track tickets that are children of others
+            const claimedByLinks = new Set(); // Track tickets claimed by issue links specifically
+
+            // First pass: identify all tickets that are claimed as children
+            tickets.forEach(ticket => {
+                // If this ticket has an epic in the dataset, it's claimed by that epic
+                if (ticket.epicKey && (ticketMap[ticket.epicKey] || virtualNodes[ticket.epicKey])) {
+                    claimed.add(ticket.key);
+                }
+                // If this ticket has a parent in the dataset, it's claimed by that parent
+                else if (ticket.parentKey && (ticketMap[ticket.parentKey] || virtualNodes[ticket.parentKey])) {
+                    claimed.add(ticket.key);
+                }
+            });
+
+            // Second pass: mark tickets that appear as children of any other ticket
+            tickets.forEach(ticket => {
+                // Mark tickets referenced in subtasks as claimed
+                if (ticket.subtasks) {
+                    ticket.subtasks.forEach(st => claimed.add(st.key));
+                }
+
+                // Mark tickets referenced in issue links as claimed
+                // Only claim for outward relationships (depends on, blocks, etc), not inward (is depended on by)
+                if (ticket.issueLinks && ticket.issueLinks.length > 0) {
+                    ticket.issueLinks.forEach(link => {
+                        // Only claim tickets for relationship types that represent outward dependencies
+                        // (where the current ticket depends on or blocks the linked ticket)
+                        const linkType = (link.type || '').toLowerCase();
+                        const isOutward = (linkType.includes('depend') && !linkType.includes('is depended')) ||
+                                        (linkType.includes('block') && !linkType.includes('is blocked')) ||
+                                        linkType.includes('relates');
+
+                        if (isOutward && link.key && ticketMap[link.key]) {
+                            claimed.add(link.key);
+                            claimedByLinks.add(link.key); // Track separately for rendering
+                        }
+                    });
+                }
+            });
+
+            // Add virtual nodes as roots (they're never claimed)
+            Object.keys(virtualNodes).forEach(key => {
+                roots.push(virtualNodes[key]);
+                processed.add(key);
+            });
+
+            // Third pass: add only unclaimed tickets as roots
+            tickets.forEach(ticket => {
+                if (processed.has(ticket.key) || claimed.has(ticket.key)) {
+                    return;
+                }
+
+                roots.push(ticket);
+                processed.add(ticket.key);
+            });
+
+            // Sort roots by status
+            sortTicketsByStatus(roots);
+
+            return { roots, claimedByLinks };
+        }
+
+
+        function hasTicketChildren(ticket, ticketMap) {
+            // Check if this ticket has subtasks
+            if (ticket.subtasks && ticket.subtasks.length > 0) return true;
+
+            // Check if any tickets have this as epic (for epic nodes)
+            if (ticket.type === 'Epic' || ticket.isVirtual) {
+                for (const key in ticketMap) {
+                    const other = ticketMap[key];
+                    if (!other.isVirtual && other.epicKey === ticket.key) {
+                        return true;
+                    }
+                }
+            }
+
+            // Check if any tickets have this as parent
+            for (const key in ticketMap) {
+                const other = ticketMap[key];
+                if (!other.isVirtual && other.parentKey === ticket.key) {
+                    return true;
+                }
+            }
+
+            // Check for relevant issue links (but not for virtual nodes)
+            if (!ticket.isVirtual && ticket.issueLinks && ticket.issueLinks.length > 0) {
+                const relevantLinks = ticket.issueLinks.filter(link =>
+                    link.type && (
+                        link.type.toLowerCase().includes('block') ||
+                        link.type.toLowerCase().includes('depend') ||
+                        link.type.toLowerCase().includes('relates')
+                    )
+                );
+                if (relevantLinks.length > 0) return true;
+            }
+
+            return false;
+        }
+
+        function getStatusSortOrder(ticket) {
+            const category = ticket.displayCategory || ticket.statusCategory || 'other';
+            const sortOrder = {
+                'new': 0,
+                'indeterminate': 1,
+                'review': 2,
+                'done': 3,
+                'other': 4
+            };
+            return sortOrder[category] !== undefined ? sortOrder[category] : 4;
+        }
+
+        function sortTicketsByStatus(tickets) {
+            return tickets.sort((a, b) => {
+                const orderA = getStatusSortOrder(a);
+                const orderB = getStatusSortOrder(b);
+                return orderA - orderB;
+            });
+        }
+
+        function renderTicketChildren(ticket, ticketMap, level, claimedByLinks, queryTickets) {
+            let html = '';
+
+            // For epic nodes (real or virtual), show tickets that have this as their epic
+            // But skip tickets that are claimed by issue links (they appear elsewhere)
+            if (ticket.type === 'Epic' || ticket.isVirtual) {
+                const epicChildren = [];
+                for (const key in ticketMap) {
+                    const other = ticketMap[key];
+                    if (!other.isVirtual && other.epicKey === ticket.key && other.key !== ticket.key && !claimedByLinks.has(other.key)) {
+                        epicChildren.push(other);
+                    }
+                }
+                if (epicChildren.length > 0) {
+                    sortTicketsByStatus(epicChildren);
+                    html += renderTreeNodes(epicChildren, ticketMap, level + 1, claimedByLinks, queryTickets);
+                }
+            }
+            // For non-epic nodes, show tickets that have this as their parent
+            // But skip tickets that are claimed by issue links (they appear elsewhere)
+            else {
+                const parentChildren = [];
+                for (const key in ticketMap) {
+                    const other = ticketMap[key];
+                    if (!other.isVirtual && other.parentKey === ticket.key && other.key !== ticket.key && !claimedByLinks.has(other.key)) {
+                        parentChildren.push(other);
+                    }
+                }
+                if (parentChildren.length > 0) {
+                    sortTicketsByStatus(parentChildren);
+                    html += renderTreeNodes(parentChildren, ticketMap, level + 1, claimedByLinks, queryTickets);
+                }
+            }
+
+            // Show subtasks (only for real tickets, not virtual nodes)
+            if (!ticket.isVirtual && ticket.subtasks && ticket.subtasks.length > 0) {
+                ticket.subtasks.forEach(subtask => {
+                    // Check if we have full ticket data for this subtask
+                    const fullSubtask = ticketMap[subtask.key];
+                    const notInQuery = !queryTickets.has(subtask.key);
+                    let statusHtml, metaHtml;
+
+                    if (fullSubtask && !fullSubtask.isVirtual) {
+                        // We have full ticket data
+                        statusHtml = `<span class="tree-status status-${fullSubtask.displayCategory || fullSubtask.statusCategory}">${escapeHtml(fullSubtask.status)}</span>`;
+                        metaHtml = `<span class="tree-meta">
+                            ${escapeHtml(fullSubtask.assignee)}
+                            ${fullSubtask.storyPoints ? ` • ${fullSubtask.storyPoints} SP` : ''}
+                            ${fullSubtask.statusCategory === 'done' && fullSubtask.resolution ? ` • ${escapeHtml(fullSubtask.resolution)}` : ''}
+                            ${(fullSubtask.displayCategory === 'indeterminate' || fullSubtask.displayCategory === 'review') && fullSubtask.statusChangeDate ? ` • ${formatSince(fullSubtask.statusChangeDate)}` : ''}
+                        </span>`;
+                    } else {
+                        // Limited data from subtask object
+                        statusHtml = `<span class="tree-meta">${escapeHtml(subtask.status)}</span>`;
+                        metaHtml = '';
+                    }
+
+                    html += `
+                        <div class="tree-node" style="margin-left: ${(level + 1) * 20}px;">
+                            <div class="tree-node-content${notInQuery ? ' tree-node-not-in-query' : ''}">
+                                <span class="tree-toggle">•</span>
+                                <span class="tree-icon">📋</span>
+                                <a href="${config.host}/browse/${subtask.key}" target="_blank" class="tree-key">
+                                    ${escapeHtml(subtask.key)}
+                                </a>
+                                <span class="tree-summary">${escapeHtml(subtask.summary)}</span>
+                                ${statusHtml}
+                                ${metaHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Show issue links (blocks, depends on, etc.) - only for real tickets
+            if (!ticket.isVirtual && ticket.issueLinks && ticket.issueLinks.length > 0) {
+                const relevantLinks = ticket.issueLinks.filter(link => {
+                    if (!link.type) return false;
+                    const linkType = link.type.toLowerCase();
+                    // Show all relationship types (blocks, depends on, relates to, and their inverses)
+                    return linkType.includes('depend') ||
+                           linkType.includes('block') ||
+                           linkType.includes('relates');
+                });
+
+                if (relevantLinks.length > 0) {
+                    relevantLinks.forEach(link => {
+                        // Check if we have full ticket data for this linked issue
+                        const fullLinkedTicket = ticketMap[link.key];
+                        const notInQuery = !queryTickets.has(link.key);
+                        let statusHtml = '', metaHtml = '';
+
+                        if (fullLinkedTicket && !fullLinkedTicket.isVirtual) {
+                            // We have full ticket data
+                            statusHtml = `<span class="tree-status status-${fullLinkedTicket.displayCategory || fullLinkedTicket.statusCategory}">${escapeHtml(fullLinkedTicket.status)}</span>`;
+                            metaHtml = `<span class="tree-meta">
+                                ${escapeHtml(fullLinkedTicket.assignee)}
+                                ${fullLinkedTicket.storyPoints ? ` • ${fullLinkedTicket.storyPoints} SP` : ''}
+                                ${fullLinkedTicket.statusCategory === 'done' && fullLinkedTicket.resolution ? ` • ${escapeHtml(fullLinkedTicket.resolution)}` : ''}
+                                ${(fullLinkedTicket.displayCategory === 'indeterminate' || fullLinkedTicket.displayCategory === 'review') && fullLinkedTicket.statusChangeDate ? ` • ${formatSince(fullLinkedTicket.statusChangeDate)}` : ''}
+                            </span>`;
+                        }
+
+                        html += `
+                            <div class="tree-link-label" style="margin-left: ${(level + 1) * 20}px;">
+                                ${escapeHtml(link.type)}
+                            </div>
+                            <div class="tree-node" style="margin-left: ${(level + 1) * 20}px;">
+                                <div class="tree-node-content${notInQuery ? ' tree-node-not-in-query' : ''}">
+                                    <span class="tree-toggle">•</span>
+                                    <span class="tree-icon">🔗</span>
+                                    <a href="${config.host}/browse/${link.key}" target="_blank" class="tree-key">
+                                        ${escapeHtml(link.key)}
+                                    </a>
+                                    <span class="tree-summary">${escapeHtml(link.summary)}</span>
+                                    ${statusHtml}
+                                    ${metaHtml}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            return html;
+        }
+
+        function getTicketIcon(ticket) {
+            if (ticket.type === 'Epic') return '🚀';
+            if (ticket.type === 'Story') return '📖';
+            if (ticket.type === 'Bug') return '🐛';
+            if (ticket.type === 'Task') return '✓';
+            return '📄';
+        }
+
+        function toggleTreeNode(nodeId) {
+            const node = document.getElementById(nodeId);
+            if (node) {
+                const toggle = node.previousElementSibling?.querySelector('.tree-toggle');
+                if (node.style.display === 'none') {
+                    node.style.display = 'block';
+                    if (toggle) toggle.textContent = '▼';
+                } else {
+                    node.style.display = 'none';
+                    if (toggle) toggle.textContent = '▶';
+                }
+            }
+        }
+
+        function expandAllTreeNodes() {
+            const treeChildren = document.querySelectorAll('.tree-children');
+            treeChildren.forEach(node => {
+                node.style.display = 'block';
+            });
+            const toggles = document.querySelectorAll('.tree-toggle');
+            toggles.forEach(toggle => {
+                if (toggle.textContent === '▶') {
+                    toggle.textContent = '▼';
+                }
+            });
+        }
+
+        function collapseAllTreeNodes() {
+            const treeChildren = document.querySelectorAll('.tree-children');
+            treeChildren.forEach(node => {
+                node.style.display = 'none';
+            });
+            const toggles = document.querySelectorAll('.tree-toggle');
+            toggles.forEach(toggle => {
+                if (toggle.textContent === '▼') {
+                    toggle.textContent = '▶';
+                }
+            });
+        }
+
+        function renderCompactView(columns) {
+            // Collect all tickets across all columns
+            const allTickets = [];
+            Object.entries(columns).forEach(([key, column]) => {
+                column.tickets.forEach(ticket => {
+                    allTickets.push(ticket);
+                });
+            });
+
+            if (allTickets.length === 0) {
+                return '<div class="table-empty">No tickets to display</div>';
+            }
+
+            // Sort by status category, then by key
+            const statusOrder = { 'new': 0, 'indeterminate': 1, 'review': 2, 'done': 3 };
+            allTickets.sort((a, b) => {
+                const statusA = statusOrder[a.displayCategory || a.statusCategory] || 999;
+                const statusB = statusOrder[b.displayCategory || b.statusCategory] || 999;
+                if (statusA !== statusB) return statusA - statusB;
+                return (a.key || '').localeCompare(b.key || '');
+            });
+
+            return `
+                <div class="table-view-container">
+                    <table class="table-view">
+                        <thead>
+                            <tr>
+                                <th class="key-column">Key</th>
+                                <th>Summary</th>
+                                <th class="status-column">Status</th>
+                                <th class="assignee-column">Assignee</th>
+                                <th class="points-column">SP</th>
+                                <th class="duration-column">Since</th>
+                                <th class="resolution-column">Resolution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allTickets.map(ticket => `
+                                <tr>
+                                    <td>
+                                        <a href="${config.host}/browse/${ticket.key}" target="_blank" class="table-key">
+                                            ${escapeHtml(ticket.key)}
+                                        </a>
+                                    </td>
+                                    <td class="table-summary">${escapeHtml(ticket.summary)}</td>
+                                    <td>
+                                        <span class="table-status status-${ticket.displayCategory || ticket.statusCategory}">
+                                            ${escapeHtml(ticket.status)}
+                                        </span>
+                                    </td>
+                                    <td class="table-assignee">${escapeHtml(ticket.assignee)}</td>
+                                    <td class="table-points">${ticket.storyPoints || '-'}</td>
+                                    <td class="table-since">${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? formatSince(ticket.statusChangeDate) : '-'}</td>
+                                    <td class="table-resolution">${ticket.statusCategory === 'done' && ticket.resolution ? escapeHtml(ticket.resolution) : '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function refreshAll() {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            page.workstreams.forEach((_, index) => refreshWorkstream(index));
+        }
+
+        function clearAll() {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            if (confirm(`This will delete all workstreams in page "${page.name}". Continue?`)) {
+                page.workstreams = [];
+                saveWorkstreams();
+                renderWorkstreams();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTimestamp(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            // Relative time for recent updates
+            if (diffMins < 1) {
+                return 'just now';
+            } else if (diffMins < 60) {
+                return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+            } else if (diffHours < 24) {
+                return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+            } else if (diffDays < 7) {
+                return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+            } else {
+                // Absolute time for older updates
+                return date.toLocaleString();
+            }
+        }
+
+        function formatSince(isoString) {
+            if (!isoString) return null;
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            let duration;
+            if (diffMins < 60) {
+                duration = `${diffMins}m`;
+            } else if (diffHours < 24) {
+                duration = `${diffHours}h`;
+            } else if (diffDays < 30) {
+                duration = `${diffDays}d`;
+            } else {
+                const diffMonths = Math.floor(diffDays / 30);
+                duration = `${diffMonths}mo`;
+            }
+            return `Since ${duration}`;
+        }
+
+        function exportConfiguration() {
+            // Create a clean config export (without ticket data)
+            const configExport = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                pages: data.pages.map(page => ({
+                    id: page.id,
+                    name: page.name,
+                    workstreams: page.workstreams.map(ws => ({
+                        id: ws.id,
+                        name: ws.name,
+                        jql: ws.jql,
+                        groupBy: ws.groupBy,
+                        view: ws.view
+                    }))
+                })),
+                currentPageId: data.currentPageId
+            };
+
+            // Create filename with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `jira-workstreams-config-${timestamp}.json`;
+
+            // Download as file
+            const blob = new Blob([JSON.stringify(configExport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert(`Configuration exported to ${filename}`);
+        }
+
+        async function importConfiguration(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedConfig = JSON.parse(e.target.result);
+
+                    // Validate structure
+                    if (!importedConfig.pages || !Array.isArray(importedConfig.pages)) {
+                        alert('Invalid configuration file: missing pages array');
+                        return;
+                    }
+
+                    // Ask user how to import
+                    const choice = confirm(
+                        'How do you want to import this configuration?\n\n' +
+                        'OK = Replace all existing pages and workstreams\n' +
+                        'Cancel = Merge with existing (add new pages)'
+                    );
+
+                    if (choice) {
+                        // Replace mode
+                        data.pages = importedConfig.pages.map(page => ({
+                            ...page,
+                            workstreams: page.workstreams.map(ws => ({
+                                ...ws,
+                                tickets: undefined // Clear ticket data - undefined means not refreshed
+                            }))
+                        }));
+                        data.currentPageId = importedConfig.currentPageId || data.pages[0]?.id;
+                    } else {
+                        // Merge mode - add imported pages with new IDs to avoid conflicts
+                        const newPages = importedConfig.pages.map(page => ({
+                            id: Date.now() + Math.random(), // New ID to avoid conflicts
+                            name: page.name + ' (imported)',
+                            workstreams: page.workstreams.map(ws => ({
+                                id: Date.now() + Math.random(),
+                                name: ws.name,
+                                jql: ws.jql,
+                                groupBy: ws.groupBy,
+                                view: ws.view,
+                                tickets: undefined // undefined means not refreshed
+                            }))
+                        }));
+                        data.pages.push(...newPages);
+                    }
+
+                    // Ensure currentPageId is valid
+                    if (!data.pages.find(p => p.id === data.currentPageId)) {
+                        data.currentPageId = data.pages[0].id;
+                    }
+
+                    await saveWorkstreams();
+                    renderTabs();
+                    renderWorkstreams();
+
+                    alert('Configuration imported successfully!');
+                } catch (error) {
+                    alert('Error importing configuration: ' + error.message);
+                    console.error('Import error:', error);
+                }
+            };
+            reader.readAsText(file);
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        function exportWorkstream(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const workstream = page.workstreams[index];
+            if (!workstream.tickets || workstream.tickets.length === 0) {
+                alert('No tickets to export. Please refresh the workstream first.');
+                return;
+            }
+
+            // Prepare CSV data
+            const headers = ['Key', 'Summary', 'Status', 'Assignee', 'Story Points', 'Type', 'Epic Key', 'Epic Name', 'Parent Key', 'Parent Name'];
+            const rows = [headers];
+
+            workstream.tickets.forEach(ticket => {
+                rows.push([
+                    ticket.key || '',
+                    ticket.summary || '',
+                    ticket.status || '',
+                    ticket.assignee || '',
+                    ticket.storyPoints || '',
+                    ticket.type || '',
+                    ticket.epicKey || '',
+                    ticket.epicName || '',
+                    ticket.parentKey || '',
+                    ticket.parentName || ''
+                ]);
+            });
+
+            // Convert to CSV format
+            const csvContent = rows.map(row =>
+                row.map(cell => {
+                    // Escape quotes and wrap in quotes if contains comma, quote, or newline
+                    const cellStr = String(cell).replace(/"/g, '""');
+                    return /[",\n]/.test(cellStr) ? `"${cellStr}"` : cellStr;
+                }).join(',')
+            ).join('\n');
+
+            // Create filename with workstream name and timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const safeName = workstream.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const filename = `${safeName}-${timestamp}.csv`;
+
+            // Download as file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert(`Exported ${workstream.tickets.length} tickets to ${filename}`);
+        }
+
+        // Recovery function - can be called from browser console
+        window.recoverFromLocalStorage = function() {
+            console.log('Checking localStorage for backups...');
+
+            const mainBackup = localStorage.getItem('workstreams');
+            if (mainBackup) {
+                console.log('Found main backup:', mainBackup);
+            }
+
+            const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('workstreams_backup_'));
+            console.log(`Found ${backupKeys.length} timestamped backups`);
+
+            backupKeys.sort().reverse().forEach((key, i) => {
+                const timestamp = key.replace('workstreams_backup_', '');
+                const date = new Date(parseInt(timestamp));
+                const backup = localStorage.getItem(key);
+                console.log(`Backup ${i + 1} (${date.toLocaleString()}):`, backup);
+            });
+
+            if (mainBackup || backupKeys.length > 0) {
+                console.log('\nTo recover, run: window.restoreBackup(backupNumber)');
+                console.log('Example: window.restoreBackup(1) for the most recent backup');
+            } else {
+                console.log('No backups found in localStorage');
+            }
+        };
+
+        window.restoreBackup = async function(backupNumber = 0) {
+            let backupData;
+
+            if (backupNumber === 0) {
+                // Restore from main backup
+                backupData = localStorage.getItem('workstreams');
+            } else {
+                // Restore from timestamped backup
+                const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('workstreams_backup_')).sort().reverse();
+                if (backupNumber <= backupKeys.length) {
+                    backupData = localStorage.getItem(backupKeys[backupNumber - 1]);
+                } else {
+                    console.error('Backup number out of range');
+                    return;
+                }
+            }
+
+            if (backupData) {
+                try {
+                    const parsed = JSON.parse(backupData);
+                    if (parsed.pages) {
+                        data = parsed;
+                    } else if (Array.isArray(parsed)) {
+                        data.pages = [{
+                            id: Date.now(),
+                            name: 'Main',
+                            workstreams: parsed
+                        }];
+                        data.currentPageId = data.pages[0].id;
+                    }
+
+                    await saveWorkstreams();
+                    renderTabs();
+                    renderWorkstreams();
+                    console.log('Backup restored successfully!');
+                    alert('Backup restored! Your data should be back.');
+                } catch (e) {
+                    console.error('Failed to restore backup:', e);
+                }
+            } else {
+                console.log('No backup data found');
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>
