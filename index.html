@@ -2448,11 +2448,17 @@
             `;
         }
 
-        function refreshAll() {
+        async function refreshAll() {
             const page = getCurrentPage();
             if (!page) return;
 
-            page.workstreams.forEach((_, index) => refreshWorkstream(index));
+            for (let index = 0; index < page.workstreams.length; index++) {
+                await refreshWorkstream(index);
+                // Add 1 second delay between refreshes to avoid rate limiting
+                if (index < page.workstreams.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
         }
 
         function clearAll() {
