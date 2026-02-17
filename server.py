@@ -14,13 +14,23 @@ CORS(app)
 
 # Path to store workstreams data
 WORKSTREAMS_FILE = 'workstreams.json'
+CACHE_FILE = 'cache.json'
+CACHE_EXPIRY_HOURS = 1
 
 # Load JIRA config from environment variables
 jira_config = {
     'host': os.getenv('JIRA_HOST', '').rstrip('/'),
     'email': os.getenv('JIRA_EMAIL', ''),
     'token': os.getenv('JIRA_TOKEN', ''),
-    'estimation_field': os.getenv('JIRA_ESTIMATION_FIELD', '')
+    'estimation_field': os.getenv('JIRA_ESTIMATION_FIELD', ''),
+    'sprint_field': os.getenv('JIRA_SPRINT_FIELD', '')
+}
+
+# Load LLM config from environment variables (optional - for summaries)
+llm_config = {
+    'api_key': os.getenv('LLM_API_KEY', ''),
+    'api_base': os.getenv('LLM_API_BASE', None),  # None = OpenAI default
+    'model': os.getenv('LLM_MODEL', 'gpt-4o-mini')
 }
 
 # Cache for custom field mappings (name -> field ID)
@@ -100,6 +110,194 @@ def get_auth_headers():
         # Server/Data Center: Use Bearer token
         return {'Authorization': f'Bearer {jira_config["token"]}'}
 
+def load_cache():
+    """Load cache from cache.json"""
+    try:
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading cache: {e}")
+    return {}
+
+def save_cache(cache):
+    """Save cache to cache.json"""
+    try:
+        with open(CACHE_FILE, 'w') as f:
+            json.dump(cache, f, indent=2)
+    except Exception as e:
+        print(f"Error saving cache: {e}")
+
+def is_cache_fresh(cached_data, hours=CACHE_EXPIRY_HOURS):
+    """Check if cached data is fresh (less than specified hours old)"""
+    if not cached_data or 'cached_at' not in cached_data:
+        return False
+
+    from datetime import datetime, timezone, timedelta
+    cached_at = datetime.fromisoformat(cached_data['cached_at'])
+    now = datetime.now(timezone.utc)
+    age = now - cached_at
+
+    return age < timedelta(hours=hours)
+
+def filter_ticket_data_by_date(full_data, days):
+    """Filter changelog and comments by date range"""
+    from datetime import datetime, timedelta, timezone
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+    filtered_data = full_data.copy()
+    filtered_data['changes'] = []
+    filtered_data['comments'] = []
+
+    # Filter changes
+    for change in full_data.get('changes', []):
+        change_date = datetime.fromisoformat(change['date_iso'])
+        if change_date >= cutoff_date:
+            filtered_data['changes'].append({
+                'date': change['date'],
+                'date_iso': change['date_iso'],
+                'author': change['author'],
+                'field': change['field'],
+                'from': change['from'],
+                'to': change['to']
+            })
+
+    # Filter comments
+    for comment in full_data.get('comments', []):
+        comment_date = datetime.fromisoformat(comment['date_iso'])
+        if comment_date >= cutoff_date:
+            filtered_data['comments'].append({
+                'date': comment['date'],
+                'date_iso': comment['date_iso'],
+                'author': comment['author'],
+                'body': comment['body']
+            })
+
+    return filtered_data
+
+def get_cached_ticket_details(ticket_key, days):
+    """Get ticket details from cache or fetch from JIRA if stale/missing"""
+    cache = load_cache()
+    cache_key = ticket_key  # No days suffix - cache full data
+
+    # Check if we have fresh cached data
+    if cache_key in cache and is_cache_fresh(cache[cache_key]):
+        print(f"Cache hit for {ticket_key}")
+        # Filter cached data by requested time range
+        filtered_data = filter_ticket_data_by_date(cache[cache_key]['data'], days)
+        filtered_data['_cache_hit'] = True
+        return filtered_data
+
+    # Fetch from JIRA
+    print(f"Cache miss for {ticket_key}, fetching from JIRA")
+    from datetime import datetime, timedelta, timezone
+
+    response = requests.get(
+        f"{jira_config['host']}/rest/api/2/issue/{ticket_key}",
+        headers=get_auth_headers(),
+        params={'expand': 'changelog,renderedFields'},
+        timeout=10
+    )
+
+    if not response.ok:
+        raise Exception(f'Failed to fetch {ticket_key}: HTTP {response.status_code}')
+
+    issue = response.json()
+    fields = issue.get('fields', {})
+
+    # Extract ticket details (handle None values with 'or {}')
+    ticket_details = {
+        'key': ticket_key,
+        'summary': fields.get('summary', 'No summary'),
+        'status': (fields.get('status') or {}).get('name', 'Unknown'),
+        'assignee': (fields.get('assignee') or {}).get('displayName', 'Unassigned'),
+        'priority': (fields.get('priority') or {}).get('name', 'None'),
+        'description': fields.get('description', ''),
+        'estimation': None,
+        'sprint': None,
+        'sprint_state': None,  # active, future, or closed
+        'changes': [],  # Will store ALL changes with ISO dates
+        'comments': []  # Will store ALL comments with ISO dates
+    }
+
+    # Try to find estimation field
+    for field_name in ['Story Points', 'Story point estimate', 'customfield_10016', 'customfield_10026']:
+        if field_name in fields and fields[field_name]:
+            ticket_details['estimation'] = fields[field_name]
+            break
+
+    # Try to find sprint field by name
+    import re
+    sprint_field_id = get_sprint_field_id()
+    if sprint_field_id:
+        sprint_data = fields.get(sprint_field_id)
+        if sprint_data:
+            # Sprint data can be an array of sprint objects or strings
+            if isinstance(sprint_data, list) and len(sprint_data) > 0:
+                # Get the most recent sprint (last in array)
+                last_sprint = sprint_data[-1]
+
+                if isinstance(last_sprint, str):
+                    # Parse sprint string format: "com.atlassian.greenhopper.service.sprint.Sprint@14b1c359[id=123,rapidViewId=456,state=ACTIVE,name=Sprint 1,...]"
+                    sprint_name_match = re.search(r'name=([^,\]]+)', last_sprint)
+                    sprint_state_match = re.search(r'state=([^,\]]+)', last_sprint)
+
+                    if sprint_name_match:
+                        ticket_details['sprint'] = sprint_name_match.group(1)
+                    if sprint_state_match:
+                        ticket_details['sprint_state'] = sprint_state_match.group(1).lower()
+                elif isinstance(last_sprint, dict):
+                    # Sprint is already a dict object
+                    ticket_details['sprint'] = last_sprint.get('name', 'Unknown Sprint')
+                    ticket_details['sprint_state'] = (last_sprint.get('state') or '').lower()
+
+    # Extract ALL changelog (no date filtering)
+    changelog = issue.get('changelog') or {}
+    for history in (changelog.get('histories') or []):
+        created = datetime.fromisoformat(history['created'].replace('Z', '+00:00'))
+        author = (history.get('author') or {}).get('displayName', 'Unknown')
+        created_str = created.strftime('%Y-%m-%d %H:%M')
+
+        for item in (history.get('items') or []):
+            field = item.get('field', '')
+            from_val = item.get('fromString', 'None')
+            to_val = item.get('toString', 'None')
+            ticket_details['changes'].append({
+                'date': created_str,
+                'date_iso': created.isoformat(),  # Store ISO for filtering
+                'author': author,
+                'field': field,
+                'from': from_val,
+                'to': to_val
+            })
+
+    # Extract ALL comments (no date filtering)
+    comment_data = fields.get('comment') or {}
+    comments = comment_data.get('comments') or []
+    for comment in comments:
+        created = datetime.fromisoformat(comment['created'].replace('Z', '+00:00'))
+        author = (comment.get('author') or {}).get('displayName', 'Unknown')
+        created_str = created.strftime('%Y-%m-%d %H:%M')
+        body = comment.get('body', '')
+        ticket_details['comments'].append({
+            'date': created_str,
+            'date_iso': created.isoformat(),  # Store ISO for filtering
+            'author': author,
+            'body': body
+        })
+
+    # Cache the FULL result (all changes and comments)
+    cache[cache_key] = {
+        'cached_at': datetime.now(timezone.utc).isoformat(),
+        'data': ticket_details
+    }
+    save_cache(cache)
+
+    # Return filtered data for the requested time range
+    filtered_data = filter_ticket_data_by_date(ticket_details, days)
+    filtered_data['_cache_hit'] = False
+    return filtered_data
+
 def get_custom_field_id(field_name):
     """Get custom field ID by name, with caching"""
     global custom_field_cache
@@ -149,6 +347,29 @@ def get_estimation_field_id():
         'Effort',
         'T-Shirt Size',
         'Size'
+    ]
+
+    for field_name in common_names:
+        field_id = get_custom_field_id(field_name)
+        if field_id:
+            return field_id
+
+    return None
+
+def get_sprint_field_id():
+    """Get sprint field ID, trying env var override first, then common names"""
+    # Try environment variable override first
+    if jira_config.get('sprint_field'):
+        field_id = get_custom_field_id(jira_config['sprint_field'])
+        if field_id:
+            return field_id
+
+    # Try common sprint field names
+    common_names = [
+        'Sprint',
+        'Sprints',
+        'Active Sprint',
+        'Active Sprints'
     ]
 
     for field_name in common_names:
@@ -461,6 +682,235 @@ def parse_issue(issue):
         'resolution': resolution_name,
         'statusChangeDate': status_change_date
     }
+
+@app.route('/api/ticket/details', methods=['POST'])
+def get_ticket_details():
+    """Get detailed ticket information including changelog (with caching)"""
+    if not jira_config['host']:
+        return jsonify({'error': 'JIRA not configured'}), 400
+
+    try:
+        data = request.json
+        ticket_key = data.get('key', '')
+        days = data.get('days', 7)
+
+        if not ticket_key:
+            return jsonify({'error': 'No ticket key provided'}), 400
+
+        # Use cached data if available and fresh
+        ticket_details = get_cached_ticket_details(ticket_key, days)
+        return jsonify(ticket_details)
+
+    except Exception as e:
+        print(f"Error fetching ticket details: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/workstream/export', methods=['POST'])
+def export_workstream_markdown():
+    """Export workstream tickets and changelogs as markdown"""
+    if not jira_config['host']:
+        return jsonify({'error': 'JIRA not configured'}), 400
+
+    try:
+        data = request.json
+        ticket_keys = data.get('tickets', [])
+        days = data.get('days', 7)
+        workstream_name = data.get('name', 'Workstream')
+        queries = data.get('queries', [])
+
+        if not ticket_keys:
+            return jsonify({'error': 'No tickets provided'}), 400
+
+        from datetime import datetime, timedelta, timezone
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+        # Build markdown content
+        markdown = f"# {workstream_name}\n\n"
+        markdown += f"**Export Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+        markdown += f"**Time Range:** Last {days} days\n"
+        markdown += f"**Ticket Count:** {len(ticket_keys)}\n\n"
+
+        # Add queries if provided
+        if queries:
+            markdown += "## Queries\n\n"
+            for i, query in enumerate(queries, 1):
+                query_name = query.get('name', f'Query {i}')
+                query_jql = query.get('jql', '')
+                markdown += f"{i}. **{query_name}**\n   ```jql\n   {query_jql}\n   ```\n\n"
+
+        markdown += "## Tickets\n\n"
+
+        # Fetch full details for each ticket
+        for key in ticket_keys:
+            try:
+                response = requests.get(
+                    f"{jira_config['host']}/rest/api/2/issue/{key}",
+                    headers=get_auth_headers(),
+                    params={'expand': 'changelog'},
+                    timeout=10
+                )
+
+                if response.ok:
+                    issue = response.json()
+                    fields = issue.get('fields', {})
+
+                    # Ticket header
+                    markdown += f"### {key}: {fields.get('summary', 'No summary')}\n\n"
+                    markdown += f"- **Status:** {fields.get('status', {}).get('name', 'Unknown')}\n"
+                    markdown += f"- **Assignee:** {fields.get('assignee', {}).get('displayName', 'Unassigned')}\n"
+                    markdown += f"- **Priority:** {fields.get('priority', {}).get('name', 'None')}\n"
+
+                    # Add estimation if available
+                    for field_name in ['Story Points', 'Story point estimate', 'customfield_10016', 'customfield_10026']:
+                        if field_name in fields and fields[field_name]:
+                            markdown += f"- **Estimation:** {fields[field_name]}\n"
+                            break
+
+                    markdown += f"- **URL:** {jira_config['host']}/browse/{key}\n\n"
+
+                    # Description
+                    description = fields.get('description', '')
+                    if description:
+                        markdown += f"**Description:**\n{description[:500]}{'...' if len(description) > 500 else ''}\n\n"
+
+                    # Changelog
+                    changelog = issue.get('changelog', {})
+                    recent_changes = []
+
+                    for history in changelog.get('histories', []):
+                        created = datetime.fromisoformat(history['created'].replace('Z', '+00:00'))
+                        if created >= cutoff_date:
+                            author = history.get('author', {}).get('displayName', 'Unknown')
+                            created_str = created.strftime('%Y-%m-%d %H:%M')
+
+                            for item in history.get('items', []):
+                                field = item.get('field', '')
+                                from_val = item.get('fromString', 'None')
+                                to_val = item.get('toString', 'None')
+                                recent_changes.append(f"- `{created_str}` **{author}**: {field} changed from `{from_val}` to `{to_val}`")
+
+                    if recent_changes:
+                        markdown += f"**Recent Changes (Last {days} days):**\n"
+                        markdown += "\n".join(recent_changes) + "\n\n"
+                    else:
+                        markdown += f"*No changes in the last {days} days*\n\n"
+
+                    markdown += "---\n\n"
+
+            except Exception as e:
+                print(f"Error fetching {key}: {e}")
+                markdown += f"### {key}\n*Error fetching details*\n\n---\n\n"
+                continue
+
+        return jsonify({'markdown': markdown})
+
+    except Exception as e:
+        print(f"Error generating markdown: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/workstream/summary', methods=['POST'])
+def generate_workstream_summary():
+    """Generate an LLM summary of ticket changes in a workstream"""
+    if not jira_config['host']:
+        return jsonify({'error': 'JIRA not configured'}), 400
+
+    if not llm_config['api_key']:
+        return jsonify({'error': 'LLM not configured. Set LLM_API_KEY in .env file'}), 400
+
+    try:
+        data = request.json
+        ticket_keys = data.get('tickets', [])
+        days = data.get('days', 7)
+
+        if not ticket_keys:
+            return jsonify({'error': 'No tickets provided'}), 400
+
+        # Fetch changelog for all tickets (using cache)
+        changelog_entries = []
+
+        for key in ticket_keys:
+            try:
+                # Use cached ticket details
+                ticket_details = get_cached_ticket_details(key, days)
+
+                # Extract changelog entries
+                for change in ticket_details.get('changes', []):
+                    changelog_entries.append({
+                        'ticket': key,
+                        'date': change['date'],
+                        'author': change['author'],
+                        'field': change['field'],
+                        'from': change['from'],
+                        'to': change['to']
+                    })
+            except Exception as e:
+                print(f"Error fetching changelog for {key}: {e}")
+                continue
+
+        if not changelog_entries:
+            return jsonify({
+                'summary': f"No changes found in the last {days} days.",
+                'changeCount': 0
+            })
+
+        # Format changelog for LLM
+        changelog_text = "\n".join([
+            f"[{entry['date']}] {entry['ticket']} - {entry['author']}: {entry['field']} changed from '{entry['from']}' to '{entry['to']}'"
+            for entry in changelog_entries
+        ])
+
+        # Call LLM to generate summary
+        summary = call_llm(changelog_text, days, len(ticket_keys), len(changelog_entries))
+
+        return jsonify({
+            'summary': summary,
+            'changeCount': len(changelog_entries),
+            'ticketCount': len(ticket_keys),
+            'days': days
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def call_llm(changelog_text, days, ticket_count, change_count):
+    """Call OpenAI-compatible LLM API to generate summary"""
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=llm_config['api_key'],
+            base_url=llm_config['api_base']
+        )
+
+        prompt = f"""Analyze these JIRA ticket changes from the last {days} days ({change_count} changes across {ticket_count} tickets) and provide a concise, actionable summary.
+
+Changes:
+{changelog_text}
+
+Please provide a brief summary focusing on:
+1. Major progress and completions
+2. Active work areas
+3. Any blockers or concerning patterns
+4. Notable status changes
+5. Key trends
+
+Keep it concise (3-5 bullet points) and actionable for a team standup."""
+
+        response = client.chat.completions.create(
+            model=llm_config['model'],
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1024,
+            temperature=0.7
+        )
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        raise Exception(f"LLM API error: {str(e)}")
 
 if __name__ == '__main__':
     print('=' * 60)

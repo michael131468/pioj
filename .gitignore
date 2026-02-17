@@ -16,6 +16,7 @@ wheels/
 workstreams.json
 workstreams_backup_*.json
 workstreams_manual_backup_*.json
+cache.json
 
 # PDM (old package manager)
 .pdm-python
