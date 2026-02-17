@@ -171,7 +171,7 @@ def search_issues():
 
     try:
         # Build fields list with dynamic custom field IDs
-        fields = ['summary', 'status', 'assignee', 'priority', 'issuetype', 'parent', 'issuelinks', 'subtasks', 'resolution']
+        fields = ['summary', 'status', 'assignee', 'reporter', 'priority', 'issuetype', 'parent', 'issuelinks', 'subtasks', 'resolution']
 
         # Add custom fields if found
         estimation_field = get_estimation_field_id()
@@ -297,7 +297,7 @@ def get_issue(issue_key):
 
     try:
         # Build fields list with dynamic custom field IDs
-        fields = ['summary', 'status', 'assignee', 'priority', 'issuetype', 'parent', 'issuelinks', 'subtasks', 'resolution']
+        fields = ['summary', 'status', 'assignee', 'reporter', 'priority', 'issuetype', 'parent', 'issuelinks', 'subtasks', 'resolution']
 
         # Add custom fields if found
         estimation_field = get_estimation_field_id()
@@ -332,6 +332,7 @@ def parse_issue(issue):
     fields = issue.get('fields', {})
     status = fields.get('status', {}) or {}
     assignee = fields.get('assignee') or {}
+    reporter = fields.get('reporter') or {}
     priority = fields.get('priority') or {}
     issuetype = fields.get('issuetype', {}) or {}
 
@@ -447,6 +448,7 @@ def parse_issue(issue):
         'status': status.get('name', 'Unknown'),
         'statusCategory': status.get('statusCategory', {}).get('key', 'other'),
         'assignee': assignee.get('displayName', 'Unassigned') if assignee else 'Unassigned',
+        'reporter': reporter.get('displayName', 'Unknown') if reporter else 'Unknown',
         'priority': priority.get('name', 'None') if priority else 'None',
         'storyPoints': story_points,
         'type': issuetype.get('name', 'Task'),

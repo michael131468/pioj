@@ -26,8 +26,8 @@
             --shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
             --color-primary: #0052cc;
             --color-primary-hover: #0747a6;
-            --color-secondary: #6554c0;
-            --color-secondary-hover: #5243aa;
+            --color-secondary: #8b7dd8;
+            --color-secondary-hover: #6554c0;
             --swimlane-header-start: #0052cc;
             --swimlane-header-end: #0747a6;
         }
@@ -43,8 +43,8 @@
             --shadow-hover: 0 4px 8px rgba(0,0,0,0.4);
             --color-primary: #4c9aff;
             --color-primary-hover: #6bb3ff;
-            --color-secondary: #6554c0;
-            --color-secondary-hover: #7968d0;
+            --color-secondary: #9d8ee0;
+            --color-secondary-hover: #8b7dd8;
             --swimlane-header-start: #4a4a4a;
             --swimlane-header-end: #5a5a5a;
         }
@@ -257,6 +257,70 @@
         .swimlane-config textarea {
             margin-top: 5px;
             font-size: 12px;
+        }
+
+        .queries-display {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .query-display-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .query-display-header {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+            min-width: 110px;
+            padding-top: 8px;
+            align-items: flex-end;
+        }
+
+        .query-display-header strong {
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        .query-equals {
+            color: var(--text-secondary);
+            font-size: 16px;
+            font-weight: bold;
+            padding: 0 8px;
+            align-self: flex-start;
+            margin-top: 10px;
+        }
+
+        .query-type-badge {
+            background: var(--color-primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            text-align: center;
+            display: inline-block;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .query-display-item textarea {
+            flex: 1;
+            min-height: 50px;
+            resize: vertical;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            padding: 8px;
         }
 
         .tickets-grid {
@@ -776,6 +840,27 @@
             color: var(--text-secondary);
         }
 
+        .loading-with-spinner {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            vertical-align: middle;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .error {
             background: #ffebe6;
             color: #bf2600;
@@ -886,6 +971,316 @@
             border-radius: 3px;
             margin: 4px 0;
             font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .query-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .query-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .query-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .query-number {
+            font-weight: 600;
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        .query-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .query-actions button {
+            padding: 4px 8px;
+            font-size: 14px;
+            line-height: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        .query-actions button:hover:not(:disabled) {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .query-actions button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .query-name-input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .query-type-select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .query-ref-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .query-ref-btn {
+            padding: 4px 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--color-primary);
+            border-radius: 4px;
+            color: var(--color-primary);
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .query-ref-btn:hover {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .query-placeholder-btn {
+            padding: 4px 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--color-secondary);
+            border-radius: 4px;
+            color: var(--color-secondary);
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .query-placeholder-btn:hover {
+            background: var(--color-secondary);
+            color: white;
+        }
+
+        .query-jql-textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        .query-help-text {
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .add-query-btn {
+            align-self: flex-start;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .add-query-btn:hover {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            border-style: solid;
+        }
+
+        .query-flow-indicator {
+            background: var(--bg-tertiary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .query-flow-indicator strong {
+            color: var(--text-primary);
+        }
+
+        .query-result-item {
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .query-result-header-simple {
+            background: var(--bg-tertiary);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 42px;
+        }
+
+        .query-result-content-simple {
+            padding: 10px 15px;
+            background: var(--bg-secondary);
+        }
+
+        .ticket-keys-list {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .ticket-key-link {
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .ticket-key-link:hover {
+            text-decoration: underline;
+        }
+
+        .query-result-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .query-result-count {
+            color: var(--color-primary);
+            font-weight: 600;
+            vertical-align: middle;
+        }
+
+        .query-result-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .query-result-content.collapsed {
+            display: none;
+        }
+
+        .query-result-item.has-error {
+            border-color: #de350b;
+        }
+
+        .query-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--color-secondary);
+            color: white;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .query-status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            vertical-align: middle;
+            line-height: 1.4;
+        }
+
+        .query-pending {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .query-loading {
+            background: var(--color-primary);
+            color: white;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .query-skipped-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--text-secondary);
+            color: white;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .query-error-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #de350b;
+            color: white;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .query-result-item.loading {
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .final-results {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .final-results h3 {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
         }
 
         .quick-nav {
@@ -1076,16 +1471,23 @@
                 <input type="text" id="workstreamName" placeholder="e.g., Backend Team Sprint 23">
             </div>
             <div class="form-group">
-                <label for="workstreamJql">JQL Query or Ticket Keys</label>
-                <textarea id="workstreamJql" placeholder="project = PROJ AND assignee = currentUser()"></textarea>
-                <div class="help-text">Enter a JQL query or comma-separated ticket keys (e.g., PROJ-123, PROJ-456)</div>
+                <label>Queries</label>
+                <div class="help-text">Define multiple queries. Each query executes independently unless you explicitly reference other queries using {query1}, {query2}, etc.</div>
+                <div id="queryStackContainer" class="query-stack">
+                    <!-- Queries will be rendered here by JavaScript -->
+                </div>
+                <button type="button" class="add-query-btn" onclick="addQueryToStack()">+ Add Query</button>
             </div>
             <div class="jql-examples">
-                <strong>JQL Examples:</strong>
-                <code>project = MYPROJ AND status != Done</code>
-                <code>assignee = currentUser() AND sprint in openSprints()</code>
-                <code>project = MYPROJ AND labels = backend</code>
-                <code>PROJ-123, PROJ-456, PROJ-789</code>
+                <strong>Examples:</strong>
+                <code>Q1 (JQL): type = Epic AND project = MYPROJ</code>
+                <code>Q2 (FOREACH): FOREACH {query1}: issuekey in childissuesof({issue})</code>
+                <code>Q3 (FOREACH): FOREACH {query1}: assignee = "{assignee}"</code>
+                <code>Q4 (FOREACH): FOREACH {query1}: reporter = "{reporter}"</code>
+                <code>Q5 (Set Operation): {query2} UNION {query3}</code>
+                <div style="margin-top: 8px; color: var(--text-secondary); font-size: 11px;">
+                    <strong>FOREACH Placeholders:</strong> {issue} {epic} {parent} {assignee} {reporter}
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="secondary" onclick="closeAddWorkstreamModal()">Cancel</button>
@@ -1107,6 +1509,8 @@
             currentPageId: null
         };
         let isConnected = false;
+        let modalQueries = []; // Temporary state for modal query editing
+        let abortControllers = {}; // Track abort controllers for ongoing refreshes
 
         function toggleTheme() {
             const body = document.body;
@@ -1131,6 +1535,45 @@
                 document.body.classList.add('dark-mode');
                 themeIcon.textContent = '☀️';
             }
+        }
+
+        // Migrate workstream from old single-jql format to new queries array format
+        function migrateWorkstream(workstream) {
+            // Migrate single jql field to queries array if needed
+            if (!workstream.queries || !Array.isArray(workstream.queries)) {
+                if (workstream.jql) {
+                    workstream.queries = [{
+                        id: Date.now(),
+                        type: 'JQL',
+                        jql: workstream.jql,
+                        name: undefined
+                    }];
+                } else {
+                    // No jql field, create empty queries array
+                    workstream.queries = [];
+                }
+            }
+
+            // Ensure all queries have a type field (for older migrated data)
+            workstream.queries = workstream.queries.map(q => {
+                let type = q.type || 'JQL';
+                // Migrate old specific operation types to SET_OPERATION
+                if (['UNION', 'INTERSECT', 'SUBTRACT', 'XOR'].includes(type)) {
+                    type = 'SET_OPERATION';
+                }
+                return {
+                    ...q,
+                    type: type
+                };
+            });
+
+            // Keep the jql field for backward compatibility
+            // queryResults starts as undefined (not yet executed)
+            if (!workstream.queryResults) {
+                workstream.queryResults = undefined;
+            }
+
+            return workstream;
         }
 
         async function init() {
@@ -1244,13 +1687,17 @@
                         data.currentPageId = data.pages[0].id;
                     }
 
-                    // Ensure workstreams have proper ticket initialization
+                    // Ensure workstreams have proper ticket initialization and migrate to new format
                     data.pages.forEach(page => {
                         if (page.workstreams) {
-                            page.workstreams.forEach(ws => {
+                            page.workstreams = page.workstreams.map(ws => {
+                                // Migrate workstream to new queries format
+                                ws = migrateWorkstream(ws);
+                                // Ensure tickets field exists
                                 if (!ws.hasOwnProperty('tickets')) {
                                     ws.tickets = undefined;
                                 }
+                                return ws;
                             });
                         }
                     });
@@ -1423,22 +1870,234 @@
             `).join('');
         }
 
+        // Modal Query Management Functions
+        function initializeModalQueries(queries) {
+            if (queries && queries.length > 0) {
+                modalQueries = JSON.parse(JSON.stringify(queries)); // Deep copy
+                // Ensure all queries have a type
+                modalQueries = modalQueries.map(q => ({
+                    ...q,
+                    type: q.type || 'JQL'
+                }));
+            } else {
+                // Initialize with one empty query
+                modalQueries = [{
+                    id: Date.now(),
+                    type: 'JQL',
+                    jql: '',
+                    name: undefined
+                }];
+            }
+            renderModalQueries();
+        }
+
+        function renderModalQueries() {
+            const container = document.getElementById('queryStackContainer');
+            if (!container) return;
+
+            container.innerHTML = modalQueries.map((query, index) => {
+                const queryType = query.type || 'JQL';
+                const isJQL = queryType === 'JQL';
+                const isSetOp = queryType === 'SET_OPERATION';
+
+                // Generate placeholder text based on type
+                let placeholder = '';
+                let helpText = '';
+                if (isJQL) {
+                    placeholder = 'Enter JQL query (e.g., project = MYPROJ)';
+                    helpText = 'Independent query. Reference other queries with {query1}, {query2}, etc. (e.g., key in ({query1}))';
+                } else if (queryType === 'FOREACH') {
+                    placeholder = 'FOREACH {query1}: issuekey in childissuesof({issue})';
+                    helpText = 'Iterate over unique values from referenced query. Placeholders: {issue}, {epic}, {parent}, {assignee}, {reporter}. Results are combined.';
+                } else if (queryType === 'SET_OPERATION') {
+                    placeholder = '{query1} UNION {query2}';
+                    helpText = 'Combine queries using: UNION (all), INTERSECT (common), SUBTRACT (difference), XOR (exclusive). Works with explicit keys: {query1} SUBTRACT (ISSUE-1, ISSUE-2)';
+                }
+
+                // Generate reference buttons for previous queries
+                let referenceButtons = '';
+                if (index > 0) {
+                    const refs = [];
+                    for (let i = 0; i < index; i++) {
+                        refs.push(`<button type="button" class="query-ref-btn" onclick="insertQueryReference(${index}, ${i + 1})" title="Insert reference to Query ${i + 1}">{query${i + 1}}</button>`);
+                    }
+                    referenceButtons = `<div class="query-ref-buttons">${refs.join('')}</div>`;
+                }
+
+                // Generate placeholder buttons for FOREACH queries
+                let placeholderButtons = '';
+                if (queryType === 'FOREACH') {
+                    placeholderButtons = `
+                        <div class="query-ref-buttons">
+                            <button type="button" class="query-placeholder-btn" onclick="insertForeachPlaceholder(${index}, 'issue')" title="Insert {issue} placeholder">{issue}</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertForeachPlaceholder(${index}, 'epic')" title="Insert {epic} placeholder">{epic}</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertForeachPlaceholder(${index}, 'parent')" title="Insert {parent} placeholder">{parent}</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertForeachPlaceholder(${index}, 'assignee')" title="Insert {assignee} placeholder">{assignee}</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertForeachPlaceholder(${index}, 'reporter')" title="Insert {reporter} placeholder">{reporter}</button>
+                        </div>
+                    `;
+                } else if (queryType === 'SET_OPERATION') {
+                    placeholderButtons = `
+                        <div class="query-ref-buttons">
+                            <button type="button" class="query-placeholder-btn" onclick="insertSetOperation(${index}, 'UNION')" title="Insert UNION operator">UNION</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertSetOperation(${index}, 'INTERSECT')" title="Insert INTERSECT operator">INTERSECT</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertSetOperation(${index}, 'SUBTRACT')" title="Insert SUBTRACT operator">SUBTRACT</button>
+                            <button type="button" class="query-placeholder-btn" onclick="insertSetOperation(${index}, 'XOR')" title="Insert XOR operator">XOR</button>
+                        </div>
+                    `;
+                }
+
+                return `
+                <div class="query-item">
+                    <div class="query-header">
+                        <span class="query-number">Query ${index + 1}</span>
+                        <div class="query-actions">
+                            <button type="button" onclick="moveQuery(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Move up">↑</button>
+                            <button type="button" onclick="moveQuery(${index}, 1)" ${index === modalQueries.length - 1 ? 'disabled' : ''} title="Move down">↓</button>
+                            <button type="button" onclick="removeQuery(${index})" ${modalQueries.length === 1 ? 'disabled' : ''} title="Remove">×</button>
+                        </div>
+                    </div>
+                    <select class="query-type-select" onchange="updateQueryType(${index}, this.value)">
+                        <option value="JQL" ${queryType === 'JQL' ? 'selected' : ''}>JQL Query</option>
+                        <option value="FOREACH" ${queryType === 'FOREACH' ? 'selected' : ''}>FOREACH</option>
+                        <option value="SET_OPERATION" ${queryType === 'SET_OPERATION' ? 'selected' : ''}>Set Operation</option>
+                    </select>
+                    <input
+                        type="text"
+                        class="query-name-input"
+                        placeholder="Optional: Query name (e.g., 'Backend tickets')"
+                        value="${escapeHtml(query.name || '')}"
+                        onchange="updateQueryName(${index}, this.value)"
+                    />
+                    ${referenceButtons}
+                    ${placeholderButtons}
+                    <textarea
+                        id="query-jql-${index}"
+                        class="query-jql-textarea"
+                        placeholder="${escapeHtml(placeholder)}"
+                        onchange="updateQueryJql(${index}, this.value)"
+                    >${escapeHtml(query.jql || '')}</textarea>
+                    <div class="query-help-text">${escapeHtml(helpText)}</div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function addQueryToStack() {
+            modalQueries.push({
+                id: Date.now(),
+                type: 'JQL',
+                jql: '',
+                name: undefined
+            });
+            renderModalQueries();
+        }
+
+        function removeQuery(index) {
+            if (modalQueries.length <= 1) {
+                alert('You must have at least one query');
+                return;
+            }
+            modalQueries.splice(index, 1);
+            renderModalQueries();
+        }
+
+        function moveQuery(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= modalQueries.length) {
+                return;
+            }
+            // Swap queries
+            const temp = modalQueries[index];
+            modalQueries[index] = modalQueries[newIndex];
+            modalQueries[newIndex] = temp;
+            renderModalQueries();
+        }
+
+        function updateQueryName(index, value) {
+            modalQueries[index].name = value.trim() || undefined;
+        }
+
+        function updateQueryType(index, value) {
+            modalQueries[index].type = value;
+            renderModalQueries();  // Re-render to update placeholder/helpers
+        }
+
+        function updateQueryJql(index, value) {
+            modalQueries[index].jql = value.trim();
+        }
+
+        function insertQueryReference(queryIndex, refNumber) {
+            const textarea = document.getElementById(`query-jql-${queryIndex}`);
+            if (textarea) {
+                const cursorPos = textarea.selectionStart;
+                const textBefore = textarea.value.substring(0, cursorPos);
+                const textAfter = textarea.value.substring(cursorPos);
+                const newValue = textBefore + `{query${refNumber}}` + textAfter;
+                textarea.value = newValue;
+                updateQueryJql(queryIndex, newValue);
+                // Set cursor after inserted text
+                textarea.focus();
+                textarea.setSelectionRange(cursorPos + `{query${refNumber}}`.length, cursorPos + `{query${refNumber}}`.length);
+            }
+        }
+
+        function insertForeachPlaceholder(queryIndex, placeholder) {
+            const textarea = document.getElementById(`query-jql-${queryIndex}`);
+            if (textarea) {
+                const cursorPos = textarea.selectionStart;
+                const textBefore = textarea.value.substring(0, cursorPos);
+                const textAfter = textarea.value.substring(cursorPos);
+                const placeholderText = `{${placeholder}}`;
+                const newValue = textBefore + placeholderText + textAfter;
+                textarea.value = newValue;
+                updateQueryJql(queryIndex, newValue);
+                // Set cursor after inserted text
+                textarea.focus();
+                textarea.setSelectionRange(cursorPos + placeholderText.length, cursorPos + placeholderText.length);
+            }
+        }
+
+        function insertSetOperation(queryIndex, operation) {
+            const textarea = document.getElementById(`query-jql-${queryIndex}`);
+            if (textarea) {
+                const cursorPos = textarea.selectionStart;
+                const textBefore = textarea.value.substring(0, cursorPos);
+                const textAfter = textarea.value.substring(cursorPos);
+                const operationText = ` ${operation} `;
+                const newValue = textBefore + operationText + textAfter;
+                textarea.value = newValue;
+                updateQueryJql(queryIndex, newValue);
+                // Set cursor after inserted text
+                textarea.focus();
+                textarea.setSelectionRange(cursorPos + operationText.length, cursorPos + operationText.length);
+            }
+        }
+
         function openAddWorkstreamModal() {
             document.getElementById('addWorkstreamModal').classList.add('active');
             document.getElementById('workstreamName').value = '';
-            document.getElementById('workstreamJql').value = '';
+            // Initialize with one empty query
+            initializeModalQueries([]);
         }
 
         function closeAddWorkstreamModal() {
             document.getElementById('addWorkstreamModal').classList.remove('active');
+            modalQueries = []; // Clear modal state
         }
 
         function addWorkstream() {
             const name = document.getElementById('workstreamName').value.trim();
-            const jql = document.getElementById('workstreamJql').value.trim();
 
-            if (!name || !jql) {
-                alert('Please fill in all fields');
+            if (!name) {
+                alert('Please enter a workstream name');
+                return;
+            }
+
+            // Validate queries
+            const validQueries = modalQueries.filter(q => q.jql && q.jql.trim());
+            if (validQueries.length === 0) {
+                alert('Please enter at least one query');
                 return;
             }
 
@@ -1448,12 +2107,26 @@
                 return;
             }
 
-            page.workstreams.push({
+            // Create workstream with new queries format
+            const workstream = {
                 id: Date.now(),
                 name: name,
-                jql: jql,
-                tickets: undefined  // undefined means not yet refreshed
-            });
+                queries: validQueries.map(q => ({
+                    id: q.id,
+                    type: q.type || 'JQL',
+                    jql: q.jql.trim(),
+                    name: q.name
+                })),
+                queryResults: undefined,
+                tickets: undefined
+            };
+
+            // For backward compatibility, also set jql field to first query
+            if (validQueries.length > 0) {
+                workstream.jql = validQueries[0].jql.trim();
+            }
+
+            page.workstreams.push(workstream);
 
             saveWorkstreams();
             closeAddWorkstreamModal();
@@ -1523,7 +2196,8 @@
                                 <button onclick="moveWorkstream(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Move up">↑</button>
                                 <button onclick="moveWorkstream(${index}, 1)" ${index === workstreams.length - 1 ? 'disabled' : ''} title="Move down">↓</button>
                             </div>
-                            <button onclick="refreshWorkstream(${index})">Refresh</button>
+                            <button id="refresh-btn-${index}" onclick="refreshWorkstream(${index})">Refresh</button>
+                            <button id="cancel-btn-${index}" onclick="cancelWorkstreamRefresh(${index})" style="display: none; background: #de350b; color: white;">Cancel</button>
                             <button onclick="exportWorkstream(${index})">Export CSV</button>
                             <button onclick="editWorkstream(${index})">Edit</button>
                             <button onclick="deleteWorkstream(${index})">Delete</button>
@@ -1531,8 +2205,18 @@
                     </div>
                     <div class="swimlane-body">
                         <div class="swimlane-config">
-                            <strong>Query:</strong>
-                            <textarea readonly>${escapeHtml(ws.jql)}</textarea>
+                            <div class="queries-display">
+                                ${(ws.queries || []).map((query, qIdx) => `
+                                    <div class="query-display-item">
+                                        <div class="query-display-header">
+                                            <strong>Query ${qIdx + 1}${query.name ? ': ' + escapeHtml(query.name) : ''}</strong>
+                                            <span class="query-type-badge">${getQueryTypeLabel(query)}</span>
+                                        </div>
+                                        <span class="query-equals">=</span>
+                                        <textarea readonly>${escapeHtml(query.jql)}</textarea>
+                                    </div>
+                                `).join('')}
+                            </div>
                             <div class="grouping-options">
                                 <div class="view-toggle">
                                     <button class="${!ws.view || ws.view === 'cards' ? 'active' : ''}" onclick="setView(${index}, 'cards')">Cards</button>
@@ -1563,9 +2247,7 @@
                             ${
                                 ws.tickets === undefined
                                     ? '<div class="empty-state">Click Refresh to load tickets</div>'
-                                    : ws.tickets.length === 0
-                                        ? '<div class="empty-state">No tickets found</div>'
-                                        : renderTicketsHTML(ws.tickets, ws.groupBy, ws.view)
+                                    : renderWorkstreamContent(ws, index)
                             }
                         </div>
                         ${ws.lastUpdated ? `<div class="last-updated">Last updated: ${formatTimestamp(ws.lastUpdated)}</div>` : ''}
@@ -1586,7 +2268,9 @@
 
             // Then set values (after modal is opened)
             document.getElementById('workstreamName').value = ws.name;
-            document.getElementById('workstreamJql').value = ws.jql;
+
+            // Load existing queries into modal
+            initializeModalQueries(ws.queries || []);
 
             const modal = document.getElementById('addWorkstreamModal');
             const title = modal.querySelector('h2');
@@ -1595,8 +2279,35 @@
             title.textContent = 'Edit Workstream';
             addButton.textContent = 'Update';
             addButton.onclick = () => {
-                ws.name = document.getElementById('workstreamName').value.trim();
-                ws.jql = document.getElementById('workstreamJql').value.trim();
+                const name = document.getElementById('workstreamName').value.trim();
+
+                if (!name) {
+                    alert('Please enter a workstream name');
+                    return;
+                }
+
+                // Validate queries
+                const validQueries = modalQueries.filter(q => q.jql && q.jql.trim());
+                if (validQueries.length === 0) {
+                    alert('Please enter at least one query');
+                    return;
+                }
+
+                ws.name = name;
+                ws.queries = validQueries.map(q => ({
+                    id: q.id,
+                    type: q.type || 'JQL',
+                    jql: q.jql.trim(),
+                    name: q.name
+                }));
+
+                // For backward compatibility, update jql field
+                ws.jql = validQueries[0].jql.trim();
+
+                // Clear query results to force re-execution
+                ws.queryResults = undefined;
+                ws.tickets = undefined;
+
                 saveWorkstreams();
                 closeAddWorkstreamModal();
                 renderWorkstreams();
@@ -1605,6 +2316,248 @@
                 addButton.textContent = 'Add';
                 addButton.onclick = addWorkstream;
             };
+        }
+
+        // Set operation helper functions
+        function unionTickets(tickets1, tickets2) {
+            const ticketMap = new Map();
+            [...tickets1, ...tickets2].forEach(ticket => {
+                ticketMap.set(ticket.key, ticket);
+            });
+            return Array.from(ticketMap.values());
+        }
+
+        function intersectTickets(tickets1, tickets2) {
+            const keys2 = new Set(tickets2.map(t => t.key));
+            return tickets1.filter(t => keys2.has(t.key));
+        }
+
+        function subtractTickets(tickets1, tickets2) {
+            const keys2 = new Set(tickets2.map(t => t.key));
+            return tickets1.filter(t => !keys2.has(t.key));
+        }
+
+        function xorTickets(tickets1, tickets2) {
+            const keys1 = new Set(tickets1.map(t => t.key));
+            const keys2 = new Set(tickets2.map(t => t.key));
+            const inOnly1 = tickets1.filter(t => !keys2.has(t.key));
+            const inOnly2 = tickets2.filter(t => !keys1.has(t.key));
+            return [...inOnly1, ...inOnly2];
+        }
+
+        // Parse DSL expression like "{query1} UNION {query2}" or "{query1} SUBTRACT (ISSUE-1, ISSUE-2)"
+        function parseDSLExpression(expression) {
+            // Pattern matches: {queryN} or (KEY1, KEY2, ...) on both sides
+            const pattern = /(?:\{query(\d+)\}|\(([\w\-,\s]+)\))\s+(UNION|INTERSECT|SUBTRACT|XOR)\s+(?:\{query(\d+)\}|\(([\w\-,\s]+)\))/i;
+            const match = expression.match(pattern);
+
+            if (!match) {
+                throw new Error('Invalid DSL syntax. Expected: {query1} OPERATION {query2} or {query1} OPERATION (ISSUE-1, ISSUE-2)');
+            }
+
+            return {
+                leftQueryIndex: match[1] ? parseInt(match[1]) - 1 : null,
+                leftKeys: match[2] ? match[2].split(',').map(k => k.trim()).filter(k => k) : null,
+                operation: match[3].toUpperCase(),
+                rightQueryIndex: match[4] ? parseInt(match[4]) - 1 : null,
+                rightKeys: match[5] ? match[5].split(',').map(k => k.trim()).filter(k => k) : null
+            };
+        }
+
+        // Parse FOREACH expression like "FOREACH {query1}: issuekey in childissuesof({issue})"
+        // Supports: {issue}, {epic}, {parent}, {assignee}, {status}, {priority}, {type}
+        function parseForeachExpression(expression) {
+            const pattern = /FOREACH\s+\{query(\d+)\}\s*:\s*(.+)/i;
+            const match = expression.match(pattern);
+
+            if (!match) {
+                throw new Error('Invalid FOREACH syntax. Expected: FOREACH {queryN}: <jql with placeholder>');
+            }
+
+            const jqlTemplate = match[2].trim();
+
+            // Detect which placeholder is being used (check in priority order)
+            let iteratorType = 'issue'; // default
+            if (jqlTemplate.includes('{assignee}')) {
+                iteratorType = 'assignee';
+            } else if (jqlTemplate.includes('{reporter}')) {
+                iteratorType = 'reporter';
+            } else if (jqlTemplate.includes('{epic}')) {
+                iteratorType = 'epic';
+            } else if (jqlTemplate.includes('{parent}')) {
+                iteratorType = 'parent';
+            }
+
+            return {
+                queryIndex: parseInt(match[1]) - 1,
+                jqlTemplate: jqlTemplate,
+                iteratorType: iteratorType
+            };
+        }
+
+        // Get display label for query type (parses SET_OPERATION to show specific operation)
+        function getQueryTypeLabel(query) {
+            const type = query.type || 'JQL';
+            if (type === 'SET_OPERATION') {
+                try {
+                    const parsed = parseDSLExpression(query.jql);
+                    return parsed.operation; // Returns UNION, INTERSECT, SUBTRACT, or XOR
+                } catch (e) {
+                    return 'Set Operation';
+                }
+            }
+            return type;
+        }
+
+        // Execute a DSL operation
+        async function executeDSLOperation(query, queryResults, signal = null) {
+            const parsed = parseDSLExpression(query.jql);
+
+            // Get left operand tickets
+            let leftTickets;
+            if (parsed.leftQueryIndex !== null) {
+                if (parsed.leftQueryIndex < 0 || parsed.leftQueryIndex >= queryResults.length) {
+                    throw new Error(`Query ${parsed.leftQueryIndex + 1} not found`);
+                }
+                leftTickets = queryResults[parsed.leftQueryIndex].tickets;
+            } else if (parsed.leftKeys) {
+                // Fetch tickets by keys
+                leftTickets = await fetchTickets(parsed.leftKeys.join(', '), false, signal);
+            } else {
+                throw new Error('Invalid left operand');
+            }
+
+            // Get right operand tickets
+            let rightTickets;
+            if (parsed.rightQueryIndex !== null) {
+                if (parsed.rightQueryIndex < 0 || parsed.rightQueryIndex >= queryResults.length) {
+                    throw new Error(`Query ${parsed.rightQueryIndex + 1} not found`);
+                }
+                rightTickets = queryResults[parsed.rightQueryIndex].tickets;
+            } else if (parsed.rightKeys) {
+                // Fetch tickets by keys
+                rightTickets = await fetchTickets(parsed.rightKeys.join(', '), false, signal);
+            } else {
+                throw new Error('Invalid right operand');
+            }
+
+            // Perform the operation
+            switch (parsed.operation) {
+                case 'UNION':
+                    return unionTickets(leftTickets, rightTickets);
+                case 'INTERSECT':
+                    return intersectTickets(leftTickets, rightTickets);
+                case 'SUBTRACT':
+                    return subtractTickets(leftTickets, rightTickets);
+                case 'XOR':
+                    return xorTickets(leftTickets, rightTickets);
+                default:
+                    throw new Error(`Unknown operation: ${parsed.operation}`);
+            }
+        }
+
+        // Execute a FOREACH operation
+        async function executeForeachOperation(query, queryResults, signal = null) {
+            const parsed = parseForeachExpression(query.jql);
+
+            // Get the source query
+            if (parsed.queryIndex < 0 || parsed.queryIndex >= queryResults.length) {
+                throw new Error(`Query ${parsed.queryIndex + 1} not found`);
+            }
+
+            const sourceTickets = queryResults[parsed.queryIndex].tickets;
+
+            if (sourceTickets.length === 0) {
+                return []; // No tickets to iterate over
+            }
+
+            // Determine what to iterate over based on iterator type
+            let itemsToIterate = [];
+            let placeholderPattern;
+
+            if (parsed.iteratorType === 'epic') {
+                // Extract unique epic keys
+                const epicKeys = new Set();
+                sourceTickets.forEach(ticket => {
+                    if (ticket.epicKey) {
+                        epicKeys.add(ticket.epicKey);
+                    }
+                });
+                itemsToIterate = Array.from(epicKeys);
+                placeholderPattern = /\{epic\}/g;
+                console.log(`  FOREACH over ${itemsToIterate.length} unique epics from ${sourceTickets.length} tickets`);
+            } else if (parsed.iteratorType === 'parent') {
+                // Extract unique parent keys
+                const parentKeys = new Set();
+                sourceTickets.forEach(ticket => {
+                    if (ticket.parentKey) {
+                        parentKeys.add(ticket.parentKey);
+                    }
+                });
+                itemsToIterate = Array.from(parentKeys);
+                placeholderPattern = /\{parent\}/g;
+                console.log(`  FOREACH over ${itemsToIterate.length} unique parents from ${sourceTickets.length} tickets`);
+            } else if (parsed.iteratorType === 'assignee') {
+                // Extract unique assignees
+                const assignees = new Set();
+                sourceTickets.forEach(ticket => {
+                    if (ticket.assignee && ticket.assignee !== 'Unassigned') {
+                        assignees.add(ticket.assignee);
+                    }
+                });
+                itemsToIterate = Array.from(assignees);
+                placeholderPattern = /\{assignee\}/g;
+                console.log(`  FOREACH over ${itemsToIterate.length} unique assignees from ${sourceTickets.length} tickets`);
+            } else if (parsed.iteratorType === 'reporter') {
+                // Extract unique reporters
+                const reporters = new Set();
+                sourceTickets.forEach(ticket => {
+                    if (ticket.reporter && ticket.reporter !== 'Unknown') {
+                        reporters.add(ticket.reporter);
+                    }
+                });
+                itemsToIterate = Array.from(reporters);
+                placeholderPattern = /\{reporter\}/g;
+                console.log(`  FOREACH over ${itemsToIterate.length} unique reporters from ${sourceTickets.length} tickets`);
+            } else {
+                // Default: iterate over ticket keys
+                itemsToIterate = sourceTickets.map(t => t.key);
+                placeholderPattern = /\{issue\}/g;
+                console.log(`  FOREACH over ${itemsToIterate.length} ticket keys`);
+            }
+
+            if (itemsToIterate.length === 0) {
+                console.log(`  No ${parsed.iteratorType} to iterate over`);
+                return [];
+            }
+
+            // Warn if iterating over many items
+            if (itemsToIterate.length > 50) {
+                console.warn(`FOREACH iterating over ${itemsToIterate.length} ${parsed.iteratorType} - this may take a while`);
+            }
+
+            // Execute JQL for each item
+            const ticketMap = new Map(); // For deduplication
+
+            for (const item of itemsToIterate) {
+                // Replace placeholder with the current item
+                const jql = parsed.jqlTemplate.replace(placeholderPattern, item);
+                console.log(`  FOREACH iteration for ${item}: ${jql}`);
+
+                try {
+                    const results = await fetchTickets(jql, true, signal); // Force JQL for FOREACH
+                    console.log(`  → ${results.length} tickets found`);
+                    // Add to map for deduplication
+                    results.forEach(t => ticketMap.set(t.key, t));
+                } catch (error) {
+                    console.error(`FOREACH error for ${item}:`, error);
+                    // Re-throw abort errors
+                    if (error.name === 'AbortError') throw error;
+                    // Continue with next item for other errors
+                }
+            }
+
+            return Array.from(ticketMap.values());
         }
 
         async function refreshWorkstream(index) {
@@ -1619,17 +2572,152 @@
                 return;
             }
 
-            container.innerHTML = '<div class="loading">Loading tickets...</div>';
+            // Create abort controller for this refresh
+            const abortController = new AbortController();
+            abortControllers[index] = abortController;
+
+            // Show cancel button, hide refresh button
+            const refreshBtn = document.getElementById(`refresh-btn-${index}`);
+            const cancelBtn = document.getElementById(`cancel-btn-${index}`);
+            if (refreshBtn) refreshBtn.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'inline-block';
+
+            container.innerHTML = '<div class="loading"><span class="loading-with-spinner"><div class="spinner"></div>Loading tickets...</span></div>';
 
             try {
-                const tickets = await fetchTickets(workstream.jql);
-                workstream.tickets = tickets;
+                // Execute queries independently (no automatic stacking)
+                const queries = workstream.queries || [];
+                if (queries.length === 0) {
+                    delete abortControllers[index];
+                    container.innerHTML = '<div class="error">No queries defined</div>';
+                    return;
+                }
+
+                const queryResults = [];
+
+                // Initialize all queries with pending state
+                workstream.queryResults = queries.map(q => ({ loading: false, pending: true }));
+                container.innerHTML = renderWorkstreamContent(workstream, index);
+
+                for (let i = 0; i < queries.length; i++) {
+                    const query = queries[i];
+                    const queryType = query.type || 'JQL';
+                    const startTime = Date.now();
+                    let tickets;
+                    let processedJql = query.jql;
+
+                    // Mark this query as loading
+                    queryResults[i] = { loading: true };
+                    workstream.queryResults = queryResults;
+                    container.innerHTML = renderWorkstreamContent(workstream, index);
+
+                    try {
+                        if (queryType === 'JQL') {
+                            // Handle JQL query with string substitution
+                            // Replace {query1}, {query2}, etc. with ticket keys
+                            processedJql = query.jql;
+                            for (let j = 0; j < i; j++) {
+                                if (queryResults[j] && queryResults[j].tickets) {
+                                    const refTickets = queryResults[j].tickets;
+                                    const keys = refTickets.map(t => t.key).join(', ');
+                                    // Replace all occurrences of {queryN}
+                                    const regex = new RegExp(`\\{query${j + 1}\\}`, 'g');
+                                    processedJql = processedJql.replace(regex, keys);
+                                }
+                            }
+
+                            console.log(`[Query ${i + 1}] JQL:`, processedJql);
+                            tickets = await fetchTickets(processedJql, true, abortController.signal); // Force JQL for JQL type queries
+                            console.log(`[Query ${i + 1}] Result: ${tickets.length} tickets`);
+                        } else if (queryType === 'FOREACH') {
+                            // Handle foreach operations
+                            console.log(`[Query ${i + 1}] FOREACH:`, query.jql);
+                            tickets = await executeForeachOperation(query, queryResults, abortController.signal);
+                            console.log(`[Query ${i + 1}] Result: ${tickets.length} tickets`);
+                            processedJql = query.jql; // Keep original for display
+                        } else if (queryType === 'SET_OPERATION') {
+                            // Handle set operations (UNION, INTERSECT, SUBTRACT, XOR)
+                            console.log(`[Query ${i + 1}] Set Operation:`, query.jql);
+                            tickets = await executeDSLOperation(query, queryResults, abortController.signal);
+                            console.log(`[Query ${i + 1}] Result: ${tickets.length} tickets`);
+                        } else {
+                            throw new Error(`Unknown query type: ${queryType}`);
+                        }
+
+                        const executionTime = Date.now() - startTime;
+
+                        // Store results
+                        queryResults[i] = {
+                            queryId: query.id,
+                            queryType: queryType,
+                            queryName: query.name,
+                            queryJql: query.jql,
+                            processedJql: processedJql,
+                            tickets: tickets,
+                            count: tickets.length,
+                            executionTime: executionTime
+                        };
+
+                    } catch (error) {
+                        // Store error result
+                        queryResults[i] = {
+                            queryId: query.id,
+                            queryType: queryType,
+                            queryName: query.name,
+                            queryJql: query.jql,
+                            processedJql: processedJql,
+                            tickets: [],
+                            count: 0,
+                            executionTime: Date.now() - startTime,
+                            error: error.message
+                        };
+                        // Don't stop execution on error - continue with remaining queries
+                    }
+
+                    // Update UI after each query completes
+                    workstream.queryResults = queryResults;
+                    container.innerHTML = renderWorkstreamContent(workstream, index);
+                }
+
+                // Final results are from the last query
+                const finalTickets = queryResults.length > 0 ? queryResults[queryResults.length - 1].tickets : [];
+
+                // Store results
+                workstream.queryResults = queryResults;
+                workstream.tickets = finalTickets;
                 workstream.lastUpdated = new Date().toISOString();
                 saveWorkstreams();
-                container.innerHTML = renderTicketsHTML(tickets, workstream.groupBy, workstream.view);
+
+                // Final render to update header stats
                 renderWorkstreams();
+
+                // Clean up abort controller and restore buttons
+                delete abortControllers[index];
+                const refreshBtn = document.getElementById(`refresh-btn-${index}`);
+                const cancelBtn = document.getElementById(`cancel-btn-${index}`);
+                if (refreshBtn) refreshBtn.style.display = 'inline-block';
+                if (cancelBtn) cancelBtn.style.display = 'none';
             } catch (error) {
-                container.innerHTML = `<div class="error">Error: ${escapeHtml(error.message)}</div>`;
+                // Clean up abort controller and restore buttons
+                delete abortControllers[index];
+                const refreshBtn = document.getElementById(`refresh-btn-${index}`);
+                const cancelBtn = document.getElementById(`cancel-btn-${index}`);
+                if (refreshBtn) refreshBtn.style.display = 'inline-block';
+                if (cancelBtn) cancelBtn.style.display = 'none';
+
+                // Handle abort error differently
+                if (error.name === 'AbortError') {
+                    container.innerHTML = '<div class="error">Query execution cancelled</div>';
+                } else {
+                    container.innerHTML = `<div class="error">Error: ${escapeHtml(error.message)}</div>`;
+                }
+            }
+        }
+
+        function cancelWorkstreamRefresh(index) {
+            if (abortControllers[index]) {
+                abortControllers[index].abort();
+                delete abortControllers[index];
             }
         }
 
@@ -1651,8 +2739,22 @@
             renderWorkstreams();
         }
 
-        async function fetchTickets(query) {
-            const isTicketKeys = !query.includes('=') && !query.includes('AND') && !query.includes('OR');
+        async function fetchTickets(query, forceJQL = false, signal = null) {
+            // If forceJQL is true (e.g., from FOREACH or explicit JQL type), skip auto-detection
+            // Otherwise, use heuristic to detect if it's a simple ticket key list
+            let isTicketKeys = false;
+
+            if (!forceJQL) {
+                // Check if query contains common JQL keywords or special chars
+                const jqlKeywords = ['in', 'AND', 'OR', 'NOT', '=', '!=', '~', '>', '<', 'is', 'was', 'order by', 'ORDER BY'];
+                const hasJqlKeyword = jqlKeywords.some(keyword => query.toLowerCase().includes(keyword.toLowerCase()));
+                const hasParentheses = query.includes('(') || query.includes(')');
+
+                // Only treat as ticket keys if it looks like a simple comma-separated list
+                isTicketKeys = !hasJqlKeyword && !hasParentheses && query.trim().match(/^[A-Z0-9\-,\s]+$/);
+            }
+
+            console.log(`    fetchTickets() - forceJQL: ${forceJQL}, isTicketKeys: ${isTicketKeys}, query: ${query}`);
 
             if (isTicketKeys) {
                 const keys = query.split(',').map(k => k.trim()).filter(k => k);
@@ -1660,25 +2762,31 @@
 
                 for (const key of keys) {
                     try {
-                        const response = await fetch(`${API_BASE}/issue/${key}`);
+                        const fetchOptions = signal ? { signal } : {};
+                        const response = await fetch(`${API_BASE}/issue/${key}`, fetchOptions);
                         if (response.ok) {
                             const ticket = await response.json();
                             tickets.push(ticket);
                         }
                     } catch (error) {
                         console.error(`Failed to fetch ${key}:`, error);
+                        // Re-throw abort errors
+                        if (error.name === 'AbortError') throw error;
                     }
                 }
 
                 return tickets;
             } else {
-                const response = await fetch(`${API_BASE}/search`, {
+                const fetchOptions = {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ jql: query })
-                });
+                };
+                if (signal) fetchOptions.signal = signal;
+
+                const response = await fetch(`${API_BASE}/search`, fetchOptions);
 
                 if (!response.ok) {
                     const error = await response.json();
@@ -1707,8 +2815,8 @@
             renderWorkstreams();
 
             const container = document.getElementById(`workstream-content-${index}`);
-            if (ws.tickets && ws.tickets.length > 0) {
-                container.innerHTML = renderTicketsHTML(ws.tickets, ws.groupBy, ws.view);
+            if (ws.queryResults && ws.queryResults.length > 0) {
+                container.innerHTML = renderWorkstreamContent(ws, index);
             }
         }
 
@@ -1723,9 +2831,85 @@
             renderWorkstreams();
 
             const container = document.getElementById(`workstream-content-${index}`);
-            if (ws.tickets && ws.tickets.length > 0) {
-                container.innerHTML = renderTicketsHTML(ws.tickets, ws.groupBy, ws.view);
+            if (ws.queryResults && ws.queryResults.length > 0) {
+                container.innerHTML = renderWorkstreamContent(ws, index);
             }
+        }
+
+        function renderWorkstreamContent(workstream, index) {
+            const queries = workstream.queries || [];
+            const queryResults = workstream.queryResults || [];
+
+            // If no queries defined at all
+            if (queries.length === 0) {
+                return '<div class="empty-state">Click Refresh to load tickets</div>';
+            }
+
+            let html = '';
+
+            // Render each query's results
+            queries.forEach((query, i) => {
+                const result = queryResults[i];
+                const queryLabel = query.name || `Query ${i + 1}`;
+                const queryTypeDisplay = getQueryTypeLabel(query);
+                const typeLabel = queryTypeDisplay !== 'JQL' ? ` <span class="query-type-badge">${queryTypeDisplay}</span>` : '';
+
+                // Determine loading/error/success state
+                let statusContent = '';
+                let resultContent = '';
+
+                if (!result) {
+                    // Query hasn't been executed yet - show as pending
+                    statusContent = '<span class="query-status-badge query-pending">Pending</span>';
+                    resultContent = '<div class="empty-state">Waiting to execute...</div>';
+                } else if (result.loading) {
+                    // Query is currently executing
+                    statusContent = '<span class="query-status-badge query-loading">Loading...</span>';
+                    resultContent = '<div class="loading"><span class="loading-with-spinner"><div class="spinner"></div>Executing query...</span></div>';
+                } else if (result.error) {
+                    // Query had an error
+                    statusContent = `<span class="query-error-badge">Error: ${escapeHtml(result.error)}</span>`;
+                    resultContent = `<div class="error">${escapeHtml(result.error)}</div>`;
+                } else if (result.skipped) {
+                    // Query was skipped
+                    statusContent = '<span class="query-skipped-badge">Skipped</span>';
+                    resultContent = '<div class="empty-state">Skipped</div>';
+                } else {
+                    // Query completed successfully
+                    statusContent = `<span class="query-result-count">${result.count} tickets</span>`;
+
+                    if (result.tickets && result.tickets.length > 0) {
+                        // For the last query, show full ticket cards; for others, show keys list
+                        const isLastQuery = i === queries.length - 1;
+                        if (isLastQuery) {
+                            resultContent = renderTicketsHTML(result.tickets, workstream.groupBy, workstream.view);
+                        } else {
+                            // Show ticket keys list for intermediate queries
+                            resultContent = `<div class="ticket-keys-list">${result.tickets.map(t =>
+                                `<a href="${config.host}/browse/${t.key}" target="_blank" class="ticket-key-link">${escapeHtml(t.key)}</a>`
+                            ).join(', ')}</div>`;
+                        }
+                    } else {
+                        resultContent = '<div class="empty-state">No tickets found</div>';
+                    }
+                }
+
+                html += `
+                    <div id="query-result-item-${index}-${i}" class="query-result-item ${result?.error ? 'has-error' : ''} ${result?.loading ? 'loading' : ''}">
+                        <div class="query-result-header-simple">
+                            <span class="query-result-title">
+                                ${escapeHtml(queryLabel)}${typeLabel}
+                            </span>
+                            ${statusContent}
+                        </div>
+                        <div class="query-result-content-simple">
+                            ${resultContent}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return html;
         }
 
         function renderTicketsHTML(tickets, groupBy = null, view = 'cards') {
@@ -2213,36 +3397,33 @@
 
         function renderTicketChildren(ticket, ticketMap, level, claimedByLinks, queryTickets) {
             let html = '';
+            const allChildren = [];
 
-            // For epic nodes (real or virtual), show tickets that have this as their epic
-            // But skip tickets that are claimed by issue links (they appear elsewhere)
+            // Collect children via epic link
             if (ticket.type === 'Epic' || ticket.isVirtual) {
-                const epicChildren = [];
                 for (const key in ticketMap) {
                     const other = ticketMap[key];
                     if (!other.isVirtual && other.epicKey === ticket.key && other.key !== ticket.key && !claimedByLinks.has(other.key)) {
-                        epicChildren.push(other);
+                        allChildren.push(other);
                     }
-                }
-                if (epicChildren.length > 0) {
-                    sortTicketsByStatus(epicChildren);
-                    html += renderTreeNodes(epicChildren, ticketMap, level + 1, claimedByLinks, queryTickets);
                 }
             }
-            // For non-epic nodes, show tickets that have this as their parent
-            // But skip tickets that are claimed by issue links (they appear elsewhere)
-            else {
-                const parentChildren = [];
-                for (const key in ticketMap) {
-                    const other = ticketMap[key];
-                    if (!other.isVirtual && other.parentKey === ticket.key && other.key !== ticket.key && !claimedByLinks.has(other.key)) {
-                        parentChildren.push(other);
+
+            // Collect children via parent link (for all tickets, including virtual nodes)
+            for (const key in ticketMap) {
+                const other = ticketMap[key];
+                if (!other.isVirtual && other.parentKey === ticket.key && other.key !== ticket.key && !claimedByLinks.has(other.key)) {
+                    // Avoid duplicates if a ticket is already added via epicKey
+                    if (!allChildren.find(t => t.key === other.key)) {
+                        allChildren.push(other);
                     }
                 }
-                if (parentChildren.length > 0) {
-                    sortTicketsByStatus(parentChildren);
-                    html += renderTreeNodes(parentChildren, ticketMap, level + 1, claimedByLinks, queryTickets);
-                }
+            }
+
+            // Render collected children
+            if (allChildren.length > 0) {
+                sortTicketsByStatus(allChildren);
+                html += renderTreeNodes(allChildren, ticketMap, level + 1, claimedByLinks, queryTickets);
             }
 
             // Show subtasks (only for real tickets, not virtual nodes)
@@ -2535,7 +3716,8 @@
                     workstreams: page.workstreams.map(ws => ({
                         id: ws.id,
                         name: ws.name,
-                        jql: ws.jql,
+                        jql: ws.jql, // Keep for backward compatibility
+                        queries: ws.queries, // New query stack format
                         groupBy: ws.groupBy,
                         view: ws.view
                     }))
@@ -2602,9 +3784,11 @@
                                 id: Date.now() + Math.random(),
                                 name: ws.name,
                                 jql: ws.jql,
+                                queries: ws.queries, // Include queries for new format
                                 groupBy: ws.groupBy,
                                 view: ws.view,
-                                tickets: undefined // undefined means not refreshed
+                                tickets: undefined, // undefined means not refreshed
+                                queryResults: undefined
                             }))
                         }));
                         data.pages.push(...newPages);
@@ -2614,6 +3798,13 @@
                     if (!data.pages.find(p => p.id === data.currentPageId)) {
                         data.currentPageId = data.pages[0].id;
                     }
+
+                    // Migrate all imported workstreams to new format
+                    data.pages.forEach(page => {
+                        if (page.workstreams) {
+                            page.workstreams = page.workstreams.map(ws => migrateWorkstream(ws));
+                        }
+                    });
 
                     await saveWorkstreams();
                     renderTabs();
