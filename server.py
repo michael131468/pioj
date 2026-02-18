@@ -220,11 +220,10 @@ def get_cached_ticket_details(ticket_key, days):
         'comments': []  # Will store ALL comments with ISO dates
     }
 
-    # Try to find estimation field
-    for field_name in ['Story Points', 'Story point estimate', 'customfield_10016', 'customfield_10026']:
-        if field_name in fields and fields[field_name]:
-            ticket_details['estimation'] = fields[field_name]
-            break
+    # Try to find estimation field by name
+    estimation_field_id = get_estimation_field_id()
+    if estimation_field_id and estimation_field_id in fields:
+        ticket_details['estimation'] = fields[estimation_field_id]
 
     # Try to find sprint field by name
     import re
