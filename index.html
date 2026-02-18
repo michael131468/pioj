@@ -170,8 +170,9 @@
         }
 
         button:disabled {
-            background: #ccc;
+            opacity: 0.5;
             cursor: not-allowed;
+            filter: grayscale(1);
         }
 
         button.secondary {
@@ -318,21 +319,17 @@
             border-left: 4px solid var(--color-primary);
         }
 
-        .analysis-box-header {
-            margin-bottom: 12px;
-        }
-
-        .analysis-box-header h4 {
-            margin: 0;
-            color: var(--text-primary);
-            font-size: 15px;
-        }
-
         .analysis-box-controls {
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+        }
+
+        .analysis-box-controls h4 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 15px;
         }
 
         .analysis-box-controls label {
@@ -353,6 +350,58 @@
         .analysis-box-controls button {
             padding: 6px 12px;
             font-size: 13px;
+        }
+
+        .custom-days-input {
+            width: 80px;
+            padding: 6px 10px;
+            font-size: 13px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .analysis-box-controls .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .analysis-box-controls .checkbox-label input[type="checkbox"] {
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .context-input {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .context-input label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .context-input textarea {
+            width: 100%;
+            padding: 8px;
+            font-size: 13px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: inherit;
+            resize: vertical;
         }
 
         .export-progress {
@@ -1647,7 +1696,8 @@
         const API_BASE = '/api';
 
         let config = {
-            host: ''
+            host: '',
+            llm_configured: false
         };
 
         let data = {
@@ -1748,10 +1798,12 @@
 
                 if (data.configured) {
                     config.host = data.host;
+                    config.llm_configured = data.llm_configured || false;
                     isConnected = true;
                     updateConnectionStatus(true);
                     statusDiv.innerHTML = `<span class="jira-host">Connected to JIRA: ${data.host}</span>`;
                 } else {
+                    config.llm_configured = false;
                     statusDiv.innerHTML = '<span class="jira-error">JIRA not configured. Please create a .env file on the server.</span>';
                     isConnected = false;
                     updateConnectionStatus(false);
@@ -2395,7 +2447,7 @@
                                     <h4>📝 AI Summary (Last ${ws.summary.days} days)</h4>
                                     <div class="summary-meta">
                                         <span>${ws.summary.changeCount} changes • Generated ${formatTimestamp(ws.summary.generatedAt)}</span>
-                                        <button onclick="generateSummary(${index})" class="summary-regenerate">🔄 Regenerate</button>
+                                        <button onclick="generateSummary(${index})" class="summary-regenerate" ${!config.llm_configured ? 'disabled title="LLM not configured. See .env.example for setup instructions."' : ''}>🔄 Regenerate</button>
                                     </div>
                                 </div>
                                 <div class="summary-content">${ws.summary.text}</div>
@@ -2408,21 +2460,30 @@
                                     : renderWorkstreamContent(ws, index)
                             }
                         </div>
+                        ${ws.lastUpdated ? `<div class="last-updated">Last updated: ${formatTimestamp(ws.lastUpdated)}</div>` : ''}
                         ${ws.tickets && ws.tickets.length > 0 ? `
                             <div class="workstream-analysis-box">
-                                <div class="analysis-box-header">
-                                    <h4>📊 Analysis & Export</h4>
-                                </div>
                                 <div class="analysis-box-controls">
-                                    <label for="summary-days-${index}">Time Range:</label>
-                                    <select id="summary-days-${index}">
+                                    <h4>🤖 AI Analysis</h4>
+                                    <select id="summary-days-${index}" onchange="handleTimeRangeChange(${index})">
                                         <option value="1">Last 24h</option>
                                         <option value="3">Last 3 days</option>
                                         <option value="7" selected>Last 7 days</option>
                                         <option value="14">Last 14 days</option>
+                                        <option value="custom">Custom...</option>
                                     </select>
+                                    <input type="number" id="custom-days-${index}" class="custom-days-input" style="display: none;" placeholder="Days" min="1" max="365" />
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="omit-inactive-${index}" />
+                                        <span>Omit tickets with no activity</span>
+                                    </label>
                                     <button onclick="exportWorkstreamMarkdown(${index})">📄 Export Markdown</button>
-                                    <!-- <button onclick="generateSummary(${index})">📝 Generate AI Summary</button> -->
+                                    <button onclick="generateSummary(${index})" ${!config.llm_configured ? 'disabled title="LLM not configured. See .env.example for setup instructions."' : ''}>🤖 Get Summary</button>
+                                    <button onclick="toggleContextInput(${index})" class="secondary" ${!config.llm_configured ? 'disabled title="LLM not configured. See .env.example for setup instructions."' : ''}>➕ Add Context</button>
+                                </div>
+                                <div id="context-input-${index}" class="context-input" style="display: none;">
+                                    <label for="summary-context-${index}">Additional context for AI analysis:</label>
+                                    <textarea id="summary-context-${index}" placeholder="E.g., Focus on security issues, ignore minor UI changes, etc." rows="2"></textarea>
                                 </div>
                                 <div id="export-progress-${index}" class="export-progress" style="display: none;">
                                     <div class="progress-info">
@@ -2435,7 +2496,6 @@
                                 </div>
                             </div>
                         ` : ''}
-                        ${ws.lastUpdated ? `<div class="last-updated">Last updated: ${formatTimestamp(ws.lastUpdated)}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -2906,6 +2966,37 @@
             }
         }
 
+        function handleTimeRangeChange(index) {
+            const select = document.getElementById(`summary-days-${index}`);
+            const customInput = document.getElementById(`custom-days-${index}`);
+
+            if (select.value === 'custom') {
+                customInput.style.display = 'inline-block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+            }
+        }
+
+        function getTimeRangeDays(index) {
+            const select = document.getElementById(`summary-days-${index}`);
+            if (select.value === 'custom') {
+                const customInput = document.getElementById(`custom-days-${index}`);
+                const customValue = parseInt(customInput.value);
+                return customValue && customValue > 0 ? customValue : 7; // Default to 7 if invalid
+            }
+            return parseInt(select.value || 7);
+        }
+
+        function toggleContextInput(index) {
+            const contextInput = document.getElementById(`context-input-${index}`);
+            if (contextInput.style.display === 'none') {
+                contextInput.style.display = 'flex';
+            } else {
+                contextInput.style.display = 'none';
+            }
+        }
+
         async function generateSummary(index) {
             const page = getCurrentPage();
             if (!page) return;
@@ -2917,8 +3008,13 @@
                 return;
             }
 
-            const daysSelect = document.getElementById(`summary-days-${index}`);
-            const days = parseInt(daysSelect?.value || 7);
+            const days = getTimeRangeDays(index);
+
+            const contextInput = document.getElementById(`summary-context-${index}`);
+            const additionalContext = contextInput?.value.trim() || '';
+
+            const omitInactiveCheckbox = document.getElementById(`omit-inactive-${index}`);
+            const omitInactive = omitInactiveCheckbox?.checked || false;
 
             // Show loading state
             const originalButton = event.target;
@@ -2936,7 +3032,9 @@
                     },
                     body: JSON.stringify({
                         tickets: ticketKeys,
-                        days: days
+                        days: days,
+                        context: additionalContext,
+                        omit_inactive: omitInactive
                     })
                 });
 
@@ -2982,8 +3080,10 @@
                 return;
             }
 
-            const daysSelect = document.getElementById(`summary-days-${index}`);
-            const days = parseInt(daysSelect?.value || 7);
+            const days = getTimeRangeDays(index);
+
+            const omitInactiveCheckbox = document.getElementById(`omit-inactive-${index}`);
+            const omitInactive = omitInactiveCheckbox?.checked || false;
 
             // Show loading state
             const originalButton = event.target;
@@ -3083,6 +3183,11 @@
                                 const now = new Date();
                                 const diffTime = Math.abs(now - lastActivityDate);
                                 daysSinceActivity = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                            }
+
+                            // Skip tickets with no activity if checkbox is checked
+                            if (omitInactive && allActivities.length === 0) {
+                                continue;
                             }
 
                             // Add ticket to markdown

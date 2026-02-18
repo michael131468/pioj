@@ -50,11 +50,13 @@ def index():
 
 @app.route('/api/config/status', methods=['GET'])
 def config_status():
-    """Check if JIRA is configured"""
+    """Check if JIRA and LLM are configured"""
     is_configured = bool(jira_config['host'] and jira_config['token'])
+    llm_configured = bool(llm_config['api_key'])
     return jsonify({
         'configured': is_configured,
-        'host': jira_config['host'] if is_configured else None
+        'host': jira_config['host'] if is_configured else None,
+        'llm_configured': llm_configured
     })
 
 @app.route('/api/workstreams', methods=['GET'])
@@ -822,6 +824,8 @@ def generate_workstream_summary():
         data = request.json
         ticket_keys = data.get('tickets', [])
         days = data.get('days', 7)
+        additional_context = data.get('context', '')
+        omit_inactive = data.get('omit_inactive', False)
 
         if not ticket_keys:
             return jsonify({'error': 'No tickets provided'}), 400
@@ -834,6 +838,15 @@ def generate_workstream_summary():
                 # Use cached ticket details
                 ticket_details = get_cached_ticket_details(key, days)
 
+                # Skip tickets with no activity if requested
+                has_activity = (
+                    len(ticket_details.get('changes', [])) > 0 or
+                    len(ticket_details.get('comments', [])) > 0
+                )
+
+                if omit_inactive and not has_activity:
+                    continue
+
                 # Extract changelog entries
                 for change in ticket_details.get('changes', []):
                     changelog_entries.append({
@@ -843,6 +856,17 @@ def generate_workstream_summary():
                         'field': change['field'],
                         'from': change['from'],
                         'to': change['to']
+                    })
+
+                # Extract comment entries
+                for comment in ticket_details.get('comments', []):
+                    changelog_entries.append({
+                        'ticket': key,
+                        'date': comment['date'],
+                        'author': comment['author'],
+                        'field': 'comment',
+                        'from': '',
+                        'to': comment['body'][:100] + ('...' if len(comment['body']) > 100 else '')
                     })
             except Exception as e:
                 print(f"Error fetching changelog for {key}: {e}")
@@ -861,7 +885,7 @@ def generate_workstream_summary():
         ])
 
         # Call LLM to generate summary
-        summary = call_llm(changelog_text, days, len(ticket_keys), len(changelog_entries))
+        summary = call_llm(changelog_text, days, len(ticket_keys), len(changelog_entries), additional_context)
 
         return jsonify({
             'summary': summary,
@@ -873,7 +897,7 @@ def generate_workstream_summary():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def call_llm(changelog_text, days, ticket_count, change_count):
+def call_llm(changelog_text, days, ticket_count, change_count, additional_context=''):
     """Call OpenAI-compatible LLM API to generate summary"""
     try:
         from openai import OpenAI
@@ -896,6 +920,9 @@ Please provide a brief summary focusing on:
 5. Key trends
 
 Keep it concise (3-5 bullet points) and actionable for a team standup."""
+
+        if additional_context:
+            prompt += f"\n\nAdditional context/instructions: {additional_context}"
 
         response = client.chat.completions.create(
             model=llm_config['model'],
