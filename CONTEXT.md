@@ -108,6 +108,7 @@
 ### 1. Pages/Tabs
 - Organize workstreams into different pages (by sprint, team, project)
 - Create with "+ New Page", delete with "×" button
+- Rename by double-clicking the page name (inline editing)
 - Cannot delete last page
 
 ### 2. Workstreams
