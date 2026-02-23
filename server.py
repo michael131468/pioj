@@ -408,6 +408,10 @@ def search_issues():
         if parent_link_field:
             fields.append(parent_link_field)
 
+        sprint_field = get_sprint_field_id()
+        if sprint_field:
+            fields.append(sprint_field)
+
         response = requests.post(
             f"{jira_config['host']}/rest/api/2/search",
             headers=get_auth_headers(),
@@ -534,6 +538,10 @@ def get_issue(issue_key):
         if parent_link_field:
             fields.append(parent_link_field)
 
+        sprint_field = get_sprint_field_id()
+        if sprint_field:
+            fields.append(sprint_field)
+
         response = requests.get(
             f"{jira_config['host']}/rest/api/2/issue/{issue_key}",
             headers=get_auth_headers(),
@@ -580,6 +588,33 @@ def parse_issue(issue):
             # For other types, convert to string
             else:
                 story_points = str(estimation_value)
+
+    # Get sprint information
+    sprint = None
+    sprint_state = None
+    sprint_field_id = get_sprint_field_id()
+    if sprint_field_id:
+        sprint_data = fields.get(sprint_field_id)
+        if sprint_data:
+            # Sprint data can be an array of sprint objects or strings
+            if isinstance(sprint_data, list) and len(sprint_data) > 0:
+                # Get the most recent sprint (last in array)
+                last_sprint = sprint_data[-1]
+
+                if isinstance(last_sprint, str):
+                    # Parse sprint string format
+                    import re
+                    sprint_name_match = re.search(r'name=([^,\]]+)', last_sprint)
+                    sprint_state_match = re.search(r'state=([^,\]]+)', last_sprint)
+
+                    if sprint_name_match:
+                        sprint = sprint_name_match.group(1)
+                    if sprint_state_match:
+                        sprint_state = sprint_state_match.group(1).lower()
+                elif isinstance(last_sprint, dict):
+                    # Sprint is already a dict object
+                    sprint = last_sprint.get('name', 'Unknown Sprint')
+                    sprint_state = (last_sprint.get('state') or '').lower()
 
     # Get parent and epic information
     parent_key = None
@@ -681,7 +716,9 @@ def parse_issue(issue):
         'issueLinks': issue_links,
         'subtasks': subtasks,
         'resolution': resolution_name,
-        'statusChangeDate': status_change_date
+        'statusChangeDate': status_change_date,
+        'sprint': sprint,
+        'sprintState': sprint_state
     }
 
 @app.route('/api/ticket/details', methods=['POST'])

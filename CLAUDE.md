@@ -55,6 +55,8 @@ filtered_data = filter_ticket_data_by_date(cached_data, days)
 - Supports JIRA_SPRINT_FIELD env var for custom sprint field names
 - Parses sprint state (active, future, closed)
 - Handles both string and object formats
+- Frontend displays sprint only for active/future sprints using `shouldShowSprint()` helper
+- Sprint shown with 🏃 emoji in cards/tree views, plain text in table view
 
 **Epic/Parent Hierarchy:**
 - Cloud: Uses `parent` field, detects Epic by issuetype
@@ -171,8 +173,10 @@ filtered_data = filter_ticket_data_by_date(cached_data, days)
 ## View Modes
 
 **Cards:** Kanban board with status columns (New/In Progress/Review/Done)
-**Table:** Sortable spreadsheet view
+**Table:** Sortable spreadsheet view with Sprint column
 **Tree:** Hierarchical epic → story → subtask → links with auto-deduplication
+
+**Sprint Display:** All views show sprint labels for tickets in active or future sprints (closed/past sprints omitted)
 
 ## Common Tasks
 

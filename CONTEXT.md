@@ -92,6 +92,8 @@
 2. **Table** - Spreadsheet-style sortable table
 3. **Tree** - Hierarchical view showing epics → stories → subtasks → links
 
+All views show sprint information for tickets in active or upcoming sprints (omitted for closed/past sprints).
+
 **Theme System:**
 - Light/Dark mode toggle with localStorage persistence
 - CSS variables for all colors (--bg-primary, --text-primary, --color-primary, etc.)

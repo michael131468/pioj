@@ -684,6 +684,10 @@
             text-align: center;
         }
 
+        .table-view th.sprint-column {
+            width: 120px;
+        }
+
         .table-view th.duration-column {
             width: 80px;
             text-align: center;
@@ -701,6 +705,11 @@
         }
 
         .table-resolution {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .table-sprint {
             font-size: 12px;
             color: var(--text-secondary);
         }
@@ -1010,6 +1019,20 @@
             border-radius: 3px;
             font-weight: 600;
             font-size: 11px;
+        }
+
+        .ticket-sprint {
+            background: #0052cc;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: 500;
+            font-size: 11px;
+        }
+
+        body.dark-mode .ticket-sprint {
+            background: #4c9aff;
+            color: #1a1a1a;
         }
 
         .empty-state {
@@ -3836,6 +3859,7 @@
                                                 </span>
                                                 <span class="ticket-assignee">👤 ${escapeHtml(ticket.assignee)}</span>
                                                 ${ticket.storyPoints ? `<span class="ticket-story-points">${ticket.storyPoints} SP</span>` : ''}
+                                                ${shouldShowSprint(ticket) ? `<span class="ticket-sprint">🏃 ${escapeHtml(ticket.sprint)}</span>` : ''}
                                                 ${ticket.statusCategory === 'done' && ticket.resolution ? `<span class="ticket-resolution">${escapeHtml(ticket.resolution)}</span>` : ''}
                                                 ${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? `<span class="ticket-since">${formatSince(ticket.statusChangeDate)}</span>` : ''}
                                             </div>
@@ -3925,6 +3949,7 @@
                         <span class="tree-meta">
                             ${escapeHtml(ticket.assignee)}
                             ${ticket.storyPoints ? ` • ${ticket.storyPoints} SP` : ''}
+                            ${shouldShowSprint(ticket) ? ` • 🏃 ${escapeHtml(ticket.sprint)}` : ''}
                             ${ticket.statusCategory === 'done' && ticket.resolution ? ` • ${escapeHtml(ticket.resolution)}` : ''}
                             ${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? ` • ${formatSince(ticket.statusChangeDate)}` : ''}
                         </span>
@@ -4139,6 +4164,7 @@
                         metaHtml = `<span class="tree-meta">
                             ${escapeHtml(fullSubtask.assignee)}
                             ${fullSubtask.storyPoints ? ` • ${fullSubtask.storyPoints} SP` : ''}
+                            ${shouldShowSprint(fullSubtask) ? ` • 🏃 ${escapeHtml(fullSubtask.sprint)}` : ''}
                             ${fullSubtask.statusCategory === 'done' && fullSubtask.resolution ? ` • ${escapeHtml(fullSubtask.resolution)}` : ''}
                             ${(fullSubtask.displayCategory === 'indeterminate' || fullSubtask.displayCategory === 'review') && fullSubtask.statusChangeDate ? ` • ${formatSince(fullSubtask.statusChangeDate)}` : ''}
                         </span>`;
@@ -4189,6 +4215,7 @@
                             metaHtml = `<span class="tree-meta">
                                 ${escapeHtml(fullLinkedTicket.assignee)}
                                 ${fullLinkedTicket.storyPoints ? ` • ${fullLinkedTicket.storyPoints} SP` : ''}
+                                ${shouldShowSprint(fullLinkedTicket) ? ` • 🏃 ${escapeHtml(fullLinkedTicket.sprint)}` : ''}
                                 ${fullLinkedTicket.statusCategory === 'done' && fullLinkedTicket.resolution ? ` • ${escapeHtml(fullLinkedTicket.resolution)}` : ''}
                                 ${(fullLinkedTicket.displayCategory === 'indeterminate' || fullLinkedTicket.displayCategory === 'review') && fullLinkedTicket.statusChangeDate ? ` • ${formatSince(fullLinkedTicket.statusChangeDate)}` : ''}
                             </span>`;
@@ -4298,6 +4325,7 @@
                                 <th class="status-column">Status</th>
                                 <th class="assignee-column">Assignee</th>
                                 <th class="points-column">SP</th>
+                                <th class="sprint-column">Sprint</th>
                                 <th class="duration-column">Since</th>
                                 <th class="resolution-column">Resolution</th>
                             </tr>
@@ -4318,6 +4346,7 @@
                                     </td>
                                     <td class="table-assignee">${escapeHtml(ticket.assignee)}</td>
                                     <td class="table-points">${ticket.storyPoints || '-'}</td>
+                                    <td class="table-sprint">${shouldShowSprint(ticket) ? escapeHtml(ticket.sprint) : '-'}</td>
                                     <td class="table-since">${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? formatSince(ticket.statusChangeDate) : '-'}</td>
                                     <td class="table-resolution">${ticket.statusCategory === 'done' && ticket.resolution ? escapeHtml(ticket.resolution) : '-'}</td>
                                 </tr>
@@ -4402,6 +4431,12 @@
                 duration = `${diffMonths}mo`;
             }
             return `Since ${duration}`;
+        }
+
+        function shouldShowSprint(ticket) {
+            // Only show sprint for active or future sprints
+            if (!ticket.sprint || !ticket.sprintState) return false;
+            return ticket.sprintState === 'active' || ticket.sprintState === 'future';
         }
 
         function exportConfiguration() {
