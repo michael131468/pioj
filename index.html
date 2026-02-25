@@ -1157,6 +1157,13 @@
             margin-left: 8px;
         }
 
+        .limit-warning {
+            color: #ff991f;
+            font-weight: 600;
+            margin-left: 8px;
+            cursor: help;
+        }
+
         .jql-examples {
             background: var(--bg-tertiary);
             padding: 10px;
@@ -1422,6 +1429,20 @@
             font-size: 11px;
             font-weight: 600;
             margin-left: 6px;
+        }
+
+        .query-count-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 6px;
+            color: var(--text-secondary);
+        }
+
+        .query-count-badge .limit-warning {
+            margin-left: 8px;
         }
 
         .query-status-badge {
@@ -2568,7 +2589,10 @@
                     const total = ws.tickets.length;
                     const done = ws.tickets.filter(t => t.statusCategory === 'done').length;
                     const percentage = Math.round((done / total) * 100);
-                    ticketStats = `<span class="ticket-count">${total} tickets • ${percentage}% done</span>`;
+                    // Check if any query was truncated
+                    const anyTruncated = ws.queryResults && ws.queryResults.some(qr => qr.truncated);
+                    const limitWarning = anyTruncated ? ' <span class="limit-warning" title="One or more queries hit the 100 ticket limit. Results may be incomplete.">⚠️ 100 ticket limit reached</span>' : '';
+                    ticketStats = `<span class="ticket-count">${total} tickets • ${percentage}% done${limitWarning}</span>`;
                 }
 
                 return `
@@ -2593,16 +2617,22 @@
                     <div class="swimlane-body">
                         <div class="swimlane-config">
                             <div class="queries-display">
-                                ${(ws.queries || []).map((query, qIdx) => `
+                                ${(ws.queries || []).map((query, qIdx) => {
+                                    const queryResult = ws.queryResults && ws.queryResults[qIdx];
+                                    const resultCount = queryResult ? queryResult.count : null;
+                                    const countBadge = resultCount !== null && resultCount !== undefined ? `<span class="query-count-badge">${resultCount} results</span>` : '';
+                                    return `
                                     <div class="query-display-item">
                                         <div class="query-display-header">
                                             <strong>Query ${qIdx + 1}${query.name ? ': ' + escapeHtml(query.name) : ''}</strong>
                                             <span class="query-type-badge">${getQueryTypeLabel(query)}</span>
+                                            ${countBadge}
                                         </div>
                                         <span class="query-equals">=</span>
                                         <textarea readonly>${escapeHtml(query.jql)}</textarea>
                                     </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </div>
                             <div class="grouping-options">
                                 <div class="view-toggle">
@@ -2972,6 +3002,7 @@
 
             // Execute JQL for each item
             const ticketMap = new Map(); // For deduplication
+            let anyTruncated = false; // Track if any iteration hit the 100 limit
 
             for (const item of itemsToIterate) {
                 // Replace placeholder with the current item
@@ -2981,6 +3012,13 @@
                 try {
                     const results = await fetchTickets(jql, true, signal); // Force JQL for FOREACH
                     console.log(`  → ${results.length} tickets found`);
+
+                    // Check if this iteration hit the limit
+                    if (results.length === 100) {
+                        anyTruncated = true;
+                        console.warn(`  ⚠️ Query returned 100 results (limit reached) for ${item}`);
+                    }
+
                     // Add to map for deduplication
                     results.forEach(t => ticketMap.set(t.key, t));
                 } catch (error) {
@@ -2991,7 +3029,10 @@
                 }
             }
 
-            return Array.from(ticketMap.values());
+            const finalResults = Array.from(ticketMap.values());
+            // Attach metadata about truncation
+            finalResults._foreachTruncated = anyTruncated;
+            return finalResults;
         }
 
         async function refreshWorkstream(index) {
@@ -3080,6 +3121,14 @@
 
                         const executionTime = Date.now() - startTime;
 
+                        // Check if query hit the limit
+                        let truncated = false;
+                        if (queryType === 'JQL' && tickets.length === 100) {
+                            truncated = true;
+                        } else if (queryType === 'FOREACH' && tickets._foreachTruncated) {
+                            truncated = true;
+                        }
+
                         // Store results
                         queryResults[i] = {
                             queryId: query.id,
@@ -3089,7 +3138,8 @@
                             processedJql: processedJql,
                             tickets: tickets,
                             count: tickets.length,
-                            executionTime: executionTime
+                            executionTime: executionTime,
+                            truncated: truncated
                         };
 
                     } catch (error) {
@@ -3658,7 +3708,8 @@
                     resultContent = '<div class="empty-state">Skipped</div>';
                 } else {
                     // Query completed successfully
-                    statusContent = `<span class="query-result-count">${result.count} tickets</span>`;
+                    const limitWarning = result.truncated ? ' <span class="limit-warning" title="This query hit the 100 ticket limit. Results may be incomplete.">⚠️ 100 ticket limit reached</span>' : '';
+                    statusContent = `<span class="query-result-count">${result.count} tickets${limitWarning}</span>`;
 
                     if (result.tickets && result.tickets.length > 0) {
                         // For the last query, show full ticket cards; for others, show keys list
