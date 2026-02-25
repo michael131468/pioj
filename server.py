@@ -53,10 +53,65 @@ def config_status():
     """Check if JIRA and LLM are configured"""
     is_configured = bool(jira_config['host'] and jira_config['token'])
     llm_configured = bool(llm_config['api_key'])
+
+    # Test JIRA connection if configured
+    jira_status = None
+    api_tests = {}
+    if is_configured:
+        try:
+            api_version = get_api_version()
+            # Try to get current user info as a simple connection test
+            test_url = f"{jira_config['host']}/rest/api/{api_version}/myself"
+            response = requests.get(test_url, headers=get_auth_headers(), timeout=10)
+            if response.ok:
+                jira_status = 'connected'
+            else:
+                jira_status = f'error: HTTP {response.status_code}'
+
+            # Test both API versions
+            for version in ['2', '3']:
+                test_results = {}
+                # Test /myself endpoint
+                myself_url = f"{jira_config['host']}/rest/api/{version}/myself"
+                try:
+                    r = requests.get(myself_url, headers=get_auth_headers(), timeout=5)
+                    test_results['myself'] = {'status': r.status_code, 'ok': r.ok}
+                except Exception as e:
+                    test_results['myself'] = {'error': str(e)}
+
+                # Test /search endpoint (v3 uses /search/jql, v2 uses /search)
+                if version == '3':
+                    search_url = f"{jira_config['host']}/rest/api/3/search/jql"
+                else:
+                    search_url = f"{jira_config['host']}/rest/api/2/search"
+                try:
+                    r = requests.post(
+                        search_url,
+                        headers=get_auth_headers(),
+                        json={'jql': 'project is not null', 'maxResults': 1},
+                        timeout=5
+                    )
+                    test_results['search'] = {'status': r.status_code, 'ok': r.ok}
+                    if not r.ok:
+                        try:
+                            test_results['search']['error'] = r.json()
+                        except:
+                            test_results['search']['error'] = r.text[:200]
+                except Exception as e:
+                    test_results['search'] = {'error': str(e)}
+
+                api_tests[f'v{version}'] = test_results
+
+        except Exception as e:
+            jira_status = f'error: {str(e)}'
+
     return jsonify({
         'configured': is_configured,
         'host': jira_config['host'] if is_configured else None,
-        'llm_configured': llm_configured
+        'llm_configured': llm_configured,
+        'jira_status': jira_status,
+        'api_version': get_api_version() if is_configured else None,
+        'api_tests': api_tests
     })
 
 @app.route('/api/workstreams', methods=['GET'])
@@ -101,16 +156,31 @@ def save_workstreams():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def get_api_version():
+    """Determine JIRA API version based on host URL"""
+    # Cloud instances use .atlassian.net and require API v3
+    # Server/Data Center instances use v2
+    if '.atlassian.net' in jira_config['host']:
+        return '3'
+    return '2'
+
 def get_auth_headers():
     """Get authentication headers based on config"""
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+
     if jira_config['email']:
         # Cloud: Use Basic Auth with email + token
         auth_str = f"{jira_config['email']}:{jira_config['token']}"
         encoded = base64.b64encode(auth_str.encode()).decode()
-        return {'Authorization': f'Basic {encoded}'}
+        headers['Authorization'] = f'Basic {encoded}'
     else:
         # Server/Data Center: Use Bearer token
-        return {'Authorization': f'Bearer {jira_config["token"]}'}
+        headers['Authorization'] = f'Bearer {jira_config["token"]}'
+
+    return headers
 
 def load_cache():
     """Load cache from cache.json"""
@@ -194,8 +264,9 @@ def get_cached_ticket_details(ticket_key, days):
     print(f"Cache miss for {ticket_key}, fetching from JIRA")
     from datetime import datetime, timedelta, timezone
 
+    api_version = get_api_version()
     response = requests.get(
-        f"{jira_config['host']}/rest/api/2/issue/{ticket_key}",
+        f"{jira_config['host']}/rest/api/{api_version}/issue/{ticket_key}",
         headers=get_auth_headers(),
         params={'expand': 'changelog,renderedFields'},
         timeout=10
@@ -310,8 +381,9 @@ def get_custom_field_id(field_name):
     # Fetch all fields from JIRA if cache is empty
     if not custom_field_cache:
         try:
+            api_version = get_api_version()
             response = requests.get(
-                f"{jira_config['host']}/rest/api/2/field",
+                f"{jira_config['host']}/rest/api/{api_version}/field",
                 headers=get_auth_headers(),
                 timeout=10
             )
@@ -412,8 +484,15 @@ def search_issues():
         if sprint_field:
             fields.append(sprint_field)
 
+        api_version = get_api_version()
+        # JIRA Cloud requires /search/jql endpoint (v3), Server/DC uses /search (v2)
+        if api_version == '3':
+            url = f"{jira_config['host']}/rest/api/3/search/jql"
+        else:
+            url = f"{jira_config['host']}/rest/api/2/search"
+
         response = requests.post(
-            f"{jira_config['host']}/rest/api/2/search",
+            url,
             headers=get_auth_headers(),
             json={
                 'jql': jql,
@@ -422,7 +501,18 @@ def search_issues():
             },
             timeout=30
         )
-        response.raise_for_status()
+
+        # Enhanced error handling
+        if not response.ok:
+            error_detail = f"HTTP {response.status_code} for {url}"
+            try:
+                error_body = response.json()
+                error_detail += f" - {error_body}"
+            except:
+                error_detail += f" - {response.text[:200]}"
+            print(f"JIRA API Error: {error_detail}")
+            response.raise_for_status()
+
         result = response.json()
 
         tickets = []
@@ -442,7 +532,7 @@ def search_issues():
         for epic_key in epic_keys:
             try:
                 epic_response = requests.get(
-                    f"{jira_config['host']}/rest/api/2/issue/{epic_key}",
+                    f"{jira_config['host']}/rest/api/{api_version}/issue/{epic_key}",
                     headers=get_auth_headers(),
                     params={'fields': 'summary'},
                     timeout=10
@@ -460,7 +550,7 @@ def search_issues():
             if parent_key not in epic_summaries:
                 try:
                     parent_response = requests.get(
-                        f"{jira_config['host']}/rest/api/2/issue/{parent_key}",
+                        f"{jira_config['host']}/rest/api/{api_version}/issue/{parent_key}",
                         headers=get_auth_headers(),
                         params={'fields': 'summary'},
                         timeout=10
@@ -490,7 +580,7 @@ def search_issues():
         for ticket in in_progress_tickets:
             try:
                 changelog_response = requests.get(
-                    f"{jira_config['host']}/rest/api/2/issue/{ticket['key']}",
+                    f"{jira_config['host']}/rest/api/{api_version}/issue/{ticket['key']}",
                     headers=get_auth_headers(),
                     params={'expand': 'changelog', 'fields': 'status'},
                     timeout=10
@@ -542,8 +632,9 @@ def get_issue(issue_key):
         if sprint_field:
             fields.append(sprint_field)
 
+        api_version = get_api_version()
         response = requests.get(
-            f"{jira_config['host']}/rest/api/2/issue/{issue_key}",
+            f"{jira_config['host']}/rest/api/{api_version}/issue/{issue_key}",
             headers=get_auth_headers(),
             params={
                 'fields': ','.join(fields),
@@ -780,10 +871,11 @@ def export_workstream_markdown():
         markdown += "## Tickets\n\n"
 
         # Fetch full details for each ticket
+        api_version = get_api_version()
         for key in ticket_keys:
             try:
                 response = requests.get(
-                    f"{jira_config['host']}/rest/api/2/issue/{key}",
+                    f"{jira_config['host']}/rest/api/{api_version}/issue/{key}",
                     headers=get_auth_headers(),
                     params={'expand': 'changelog'},
                     timeout=10
@@ -981,7 +1073,9 @@ if __name__ == '__main__':
     print('=' * 60)
 
     if jira_config['host'] and jira_config['token']:
+        api_version = get_api_version()
         print(f'JIRA Host: {jira_config["host"]}')
+        print(f'API Version: v{api_version}')
         if jira_config['email']:
             print(f'Auth Mode: Cloud (email: {jira_config["email"]})')
         else:

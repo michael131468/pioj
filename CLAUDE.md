@@ -41,6 +41,13 @@ filtered_data = filter_ticket_data_by_date(cached_data, days)
 
 ### 4. JIRA API Handling
 
+**API Version Detection:**
+- Automatically detects API version based on host URL
+- Cloud instances (.atlassian.net) use API v3 with `/search/jql` endpoint
+- Server/Data Center instances use API v2 with `/search` endpoint
+- See `get_api_version()` in server.py
+- Note: JIRA Cloud deprecated `/rest/api/3/search` in favor of `/rest/api/3/search/jql`
+
 **Custom Fields:**
 - Field IDs vary by instance - look up by name at runtime
 - Cached in memory to avoid repeated API calls
