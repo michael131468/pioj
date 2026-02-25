@@ -5,8 +5,8 @@ import json
 from dotenv import load_dotenv
 from jira import JIRA
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (override shell vars)
+load_dotenv(override=True)
 
 app = Flask(__name__)
 CORS(app)
