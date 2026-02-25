@@ -1565,7 +1565,7 @@
         }
 
         .tab {
-            padding: 12px 20px;
+            padding: 10px 16px;
             background: transparent;
             border: none;
             color: var(--text-secondary);
@@ -1576,6 +1576,9 @@
             border-bottom: 3px solid transparent;
             transition: all 0.2s;
             position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .tab:hover {
@@ -1589,15 +1592,30 @@
             border-bottom-color: var(--color-primary);
         }
 
-        .tab .tab-close {
-            margin-left: 8px;
-            color: var(--text-secondary);
-            font-weight: bold;
-            display: none;
+        .tab .tab-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            visibility: hidden;
+            line-height: 1;
         }
 
-        .tab:hover .tab-close {
-            display: inline;
+        .tab:hover .tab-actions {
+            visibility: visible;
+        }
+
+        .tab .tab-rename,
+        .tab .tab-close {
+            color: var(--text-secondary);
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            font-size: 14px;
+        }
+
+        .tab .tab-rename:hover {
+            color: var(--color-primary);
         }
 
         .tab .tab-close:hover {
@@ -1605,7 +1623,15 @@
         }
 
         .tab-name {
-            cursor: text;
+            cursor: grab;
+        }
+
+        .tab.dragging {
+            opacity: 0.5;
+        }
+
+        .tab.drag-over {
+            border-left: 3px solid var(--color-primary);
         }
 
         .tab-rename-input {
@@ -2100,56 +2126,90 @@
             const container = document.getElementById('tabsContainer');
 
             container.innerHTML = data.pages.map(page => `
-                <button class="tab ${page.id === data.currentPageId ? 'active' : ''}" data-page-id="${page.id}">
+                <button class="tab ${page.id === data.currentPageId ? 'active' : ''}" data-page-id="${page.id}" draggable="true">
                     <span class="tab-name">${escapeHtml(page.name)}</span>
-                    ${data.pages.length > 1 ? `<span class="tab-close" onclick="deletePage(${page.id}, event)">×</span>` : ''}
+                    <span class="tab-actions">
+                        <span class="tab-rename" title="Rename page">✎</span>
+                        ${data.pages.length > 1 ? `<span class="tab-close" title="Delete page">×</span>` : ''}
+                    </span>
                 </button>
             `).join('');
 
             // Attach event listeners after rendering
-            container.querySelectorAll('.tab').forEach(tab => {
+            container.querySelectorAll('.tab').forEach((tab, index) => {
                 const pageId = parseInt(tab.getAttribute('data-page-id'));
                 const tabName = tab.querySelector('.tab-name');
+                const tabRename = tab.querySelector('.tab-rename');
                 const tabClose = tab.querySelector('.tab-close');
 
-                let clickTimeout = null;
-
-                // Click to switch page (with delay to allow double-click)
+                // Click to switch page
                 tab.addEventListener('click', (e) => {
-                    // Don't switch if clicking close button
-                    if (tabClose && (e.target === tabClose || tabClose.contains(e.target))) return;
+                    // Don't switch if clicking action buttons
+                    if (e.target.closest('.tab-actions')) return;
 
-                    // If clicking on the tab name, use a delay to allow double-click
-                    if (tabName && (e.target === tabName || tabName.contains(e.target))) {
-                        // Clear any pending click
-                        if (clickTimeout) clearTimeout(clickTimeout);
-
-                        // Wait a bit to see if this is a double-click
-                        clickTimeout = setTimeout(() => {
-                            if (data.currentPageId !== pageId) {
-                                switchPage(pageId);
-                            }
-                        }, 250);
-                    } else {
-                        // Clicking elsewhere on tab, switch immediately
-                        if (data.currentPageId !== pageId) {
-                            switchPage(pageId);
-                        }
+                    if (data.currentPageId !== pageId) {
+                        switchPage(pageId);
                     }
                 });
 
-                // Double-click name to rename
-                if (tabName) {
-                    tabName.addEventListener('dblclick', (e) => {
-                        e.preventDefault();
-                        // Cancel the pending single-click
-                        if (clickTimeout) {
-                            clearTimeout(clickTimeout);
-                            clickTimeout = null;
-                        }
+                // Click pencil icon to rename
+                if (tabRename) {
+                    tabRename.addEventListener('click', (e) => {
+                        e.stopPropagation();
                         startRenamePage(pageId, tabName);
                     });
                 }
+
+                // Click × to delete
+                if (tabClose) {
+                    tabClose.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deletePage(pageId, e);
+                    });
+                }
+
+                // Drag and drop to reorder pages
+                tab.addEventListener('dragstart', (e) => {
+                    tab.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', index);
+                });
+
+                tab.addEventListener('dragend', () => {
+                    tab.classList.remove('dragging');
+                    container.querySelectorAll('.tab').forEach(t => t.classList.remove('drag-over'));
+                });
+
+                tab.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+
+                    const draggingTab = container.querySelector('.dragging');
+                    if (draggingTab && draggingTab !== tab) {
+                        tab.classList.add('drag-over');
+                    }
+                });
+
+                tab.addEventListener('dragleave', () => {
+                    tab.classList.remove('drag-over');
+                });
+
+                tab.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    tab.classList.remove('drag-over');
+
+                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                    const toIndex = index;
+
+                    if (fromIndex !== toIndex) {
+                        // Reorder pages array
+                        const [movedPage] = data.pages.splice(fromIndex, 1);
+                        data.pages.splice(toIndex, 0, movedPage);
+
+                        saveWorkstreams();
+                        renderTabs();
+                    }
+                });
             });
         }
 
