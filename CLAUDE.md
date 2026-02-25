@@ -41,21 +41,20 @@ filtered_data = filter_ticket_data_by_date(cached_data, days)
 
 ### 4. JIRA API Handling
 
-**API Version Detection:**
-- Automatically detects API version based on host URL
-- Cloud instances (.atlassian.net) use API v3 with `/search/jql` endpoint
-- Server/Data Center instances use API v2 with `/search` endpoint
-- See `get_api_version()` in server.py
-- Note: JIRA Cloud deprecated `/rest/api/3/search` in favor of `/rest/api/3/search/jql`
+**Library Usage:**
+- Uses official `jira` Python library (v3.10+)
+- Client initialized once at startup with appropriate authentication
+- Automatically handles Cloud (API v3) vs Server/DC (API v2) differences
+- See `initialize_jira_client()` in server.py
 
 **Custom Fields:**
-- Field IDs vary by instance - look up by name at runtime
-- Cached in memory to avoid repeated API calls
-- See `get_custom_field_id()` in server.py
+- Field discovery via `jira_client.fields()`
+- Cached in memory to avoid repeated lookups
+- Three-tier lookup: env var → common names → fallback
+- See `get_custom_field_id()`, `get_estimation_field_id()`, `get_sprint_field_id()`
 
 **Estimation Field:**
-- Three-tier lookup: env var → common names → fallback
-- Handles numeric (story points), string (T-shirt), or custom
+- Handles numeric (story points), string (T-shirt), or custom formats
 - Common names: "Story point estimate", "Story Points", "Points", "T-Shirt Size", etc.
 
 **Sprint Field:**
@@ -70,11 +69,21 @@ filtered_data = filter_ticket_data_by_date(cached_data, days)
 - Server/Data Center: Uses "Epic Link" and "Parent Link" custom fields
 - Dual population for compatibility
 
-**Performance:**
-- Only fetch changelog for "In Progress" or "Review" tickets
-- Cannot use `expand=changelog` in search (causes 400 error)
-- Must fetch changelog separately per issue
-- Use caching to minimize API calls
+**Issue Search:**
+- `jira_client.search_issues()` for JQL queries
+- Returns Issue objects, parsed by `parse_issue()`
+- Same maxResults limit (100), same field selection
+- Query stacking handled at application level (unchanged)
+
+**Changelog Access:**
+- Accessed via `issue.changelog.histories` (when expanded)
+- Only fetched for in-progress/review tickets (optimization preserved)
+- Same caching strategy (1-hour expiry in cache.json)
+
+**Authentication:**
+- Cloud: Basic Auth with email + API token
+- Server/DC: Bearer token in custom headers
+- Configured via .env (JIRA_HOST, JIRA_EMAIL, JIRA_TOKEN)
 
 ### 5. Query Stacking (Advanced JQL)
 

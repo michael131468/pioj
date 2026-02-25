@@ -1,10 +1,9 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import requests
-import base64
 import os
 import json
 from dotenv import load_dotenv
+from jira import JIRA
 
 # Load environment variables from .env file
 load_dotenv()
@@ -44,6 +43,32 @@ if not jira_config['host'] or not jira_config['token']:
     print('See .env.example for reference')
     print('='*60 + '\n')
 
+def initialize_jira_client():
+    """Initialize JIRA client with appropriate authentication"""
+    if not jira_config['host'] or not jira_config['token']:
+        return None
+
+    try:
+        if jira_config['email']:
+            # Cloud: Basic Auth
+            return JIRA(
+                server=jira_config['host'],
+                basic_auth=(jira_config['email'], jira_config['token'])
+            )
+        else:
+            # Server/Data Center: Bearer token
+            headers = JIRA.DEFAULT_OPTIONS["headers"].copy()
+            headers["Authorization"] = f"Bearer {jira_config['token']}"
+            return JIRA(
+                server=jira_config['host'],
+                options={"headers": headers}
+            )
+    except Exception as e:
+        print(f"Failed to initialize JIRA client: {e}")
+        return None
+
+jira_client = initialize_jira_client()
+
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
@@ -56,62 +81,25 @@ def config_status():
 
     # Test JIRA connection if configured
     jira_status = None
-    api_tests = {}
+    auth_mode = None
     if is_configured:
-        try:
-            api_version = get_api_version()
-            # Try to get current user info as a simple connection test
-            test_url = f"{jira_config['host']}/rest/api/{api_version}/myself"
-            response = requests.get(test_url, headers=get_auth_headers(), timeout=10)
-            if response.ok:
+        if jira_client:
+            try:
+                # Test connection using jira_client.myself()
+                myself = jira_client.myself()
                 jira_status = 'connected'
-            else:
-                jira_status = f'error: HTTP {response.status_code}'
-
-            # Test both API versions
-            for version in ['2', '3']:
-                test_results = {}
-                # Test /myself endpoint
-                myself_url = f"{jira_config['host']}/rest/api/{version}/myself"
-                try:
-                    r = requests.get(myself_url, headers=get_auth_headers(), timeout=5)
-                    test_results['myself'] = {'status': r.status_code, 'ok': r.ok}
-                except Exception as e:
-                    test_results['myself'] = {'error': str(e)}
-
-                # Test /search endpoint (v3 uses /search/jql, v2 uses /search)
-                if version == '3':
-                    search_url = f"{jira_config['host']}/rest/api/3/search/jql"
-                else:
-                    search_url = f"{jira_config['host']}/rest/api/2/search"
-                try:
-                    r = requests.post(
-                        search_url,
-                        headers=get_auth_headers(),
-                        json={'jql': 'project is not null', 'maxResults': 1},
-                        timeout=5
-                    )
-                    test_results['search'] = {'status': r.status_code, 'ok': r.ok}
-                    if not r.ok:
-                        try:
-                            test_results['search']['error'] = r.json()
-                        except:
-                            test_results['search']['error'] = r.text[:200]
-                except Exception as e:
-                    test_results['search'] = {'error': str(e)}
-
-                api_tests[f'v{version}'] = test_results
-
-        except Exception as e:
-            jira_status = f'error: {str(e)}'
+                auth_mode = 'Basic Auth (Cloud)' if jira_config['email'] else 'Bearer Token (Server/DC)'
+            except Exception as e:
+                jira_status = f'error: {str(e)}'
+        else:
+            jira_status = 'error: client initialization failed'
 
     return jsonify({
         'configured': is_configured,
         'host': jira_config['host'] if is_configured else None,
         'llm_configured': llm_configured,
         'jira_status': jira_status,
-        'api_version': get_api_version() if is_configured else None,
-        'api_tests': api_tests
+        'auth_mode': auth_mode
     })
 
 @app.route('/api/workstreams', methods=['GET'])
@@ -155,32 +143,6 @@ def save_workstreams():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-def get_api_version():
-    """Determine JIRA API version based on host URL"""
-    # Cloud instances use .atlassian.net and require API v3
-    # Server/Data Center instances use v2
-    if '.atlassian.net' in jira_config['host']:
-        return '3'
-    return '2'
-
-def get_auth_headers():
-    """Get authentication headers based on config"""
-    headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-
-    if jira_config['email']:
-        # Cloud: Use Basic Auth with email + token
-        auth_str = f"{jira_config['email']}:{jira_config['token']}"
-        encoded = base64.b64encode(auth_str.encode()).decode()
-        headers['Authorization'] = f'Basic {encoded}'
-    else:
-        # Server/Data Center: Use Bearer token
-        headers['Authorization'] = f'Bearer {jira_config["token"]}'
-
-    return headers
 
 def load_cache():
     """Load cache from cache.json"""
@@ -264,28 +226,28 @@ def get_cached_ticket_details(ticket_key, days):
     print(f"Cache miss for {ticket_key}, fetching from JIRA")
     from datetime import datetime, timedelta, timezone
 
-    api_version = get_api_version()
-    response = requests.get(
-        f"{jira_config['host']}/rest/api/{api_version}/issue/{ticket_key}",
-        headers=get_auth_headers(),
-        params={'expand': 'changelog,renderedFields'},
-        timeout=10
+    if not jira_client:
+        raise Exception('JIRA client not configured')
+
+    # Use library to fetch issue with changelog
+    issue = jira_client.issue(
+        ticket_key,
+        expand='changelog,renderedFields'
     )
+    fields = issue.fields
 
-    if not response.ok:
-        raise Exception(f'Failed to fetch {ticket_key}: HTTP {response.status_code}')
+    # Extract ticket details (handle None values)
+    status = getattr(fields, 'status', None)
+    assignee = getattr(fields, 'assignee', None)
+    priority = getattr(fields, 'priority', None)
 
-    issue = response.json()
-    fields = issue.get('fields', {})
-
-    # Extract ticket details (handle None values with 'or {}')
     ticket_details = {
         'key': ticket_key,
-        'summary': fields.get('summary', 'No summary'),
-        'status': (fields.get('status') or {}).get('name', 'Unknown'),
-        'assignee': (fields.get('assignee') or {}).get('displayName', 'Unassigned'),
-        'priority': (fields.get('priority') or {}).get('name', 'None'),
-        'description': fields.get('description', ''),
+        'summary': getattr(fields, 'summary', 'No summary'),
+        'status': status.name if status and hasattr(status, 'name') else 'Unknown',
+        'assignee': assignee.displayName if assignee and hasattr(assignee, 'displayName') else 'Unassigned',
+        'priority': priority.name if priority and hasattr(priority, 'name') else 'None',
+        'description': getattr(fields, 'description', ''),
         'estimation': None,
         'sprint': None,
         'sprint_state': None,  # active, future, or closed
@@ -295,14 +257,16 @@ def get_cached_ticket_details(ticket_key, days):
 
     # Try to find estimation field by name
     estimation_field_id = get_estimation_field_id()
-    if estimation_field_id and estimation_field_id in fields:
-        ticket_details['estimation'] = fields[estimation_field_id]
+    if estimation_field_id:
+        estimation_value = getattr(fields, estimation_field_id, None)
+        if estimation_value is not None:
+            ticket_details['estimation'] = estimation_value
 
     # Try to find sprint field by name
     import re
     sprint_field_id = get_sprint_field_id()
     if sprint_field_id:
-        sprint_data = fields.get(sprint_field_id)
+        sprint_data = getattr(fields, sprint_field_id, None)
         if sprint_data:
             # Sprint data can be an array of sprint objects or strings
             if isinstance(sprint_data, list) and len(sprint_data) > 0:
@@ -324,39 +288,50 @@ def get_cached_ticket_details(ticket_key, days):
                     ticket_details['sprint_state'] = (last_sprint.get('state') or '').lower()
 
     # Extract ALL changelog (no date filtering)
-    changelog = issue.get('changelog') or {}
-    for history in (changelog.get('histories') or []):
-        created = datetime.fromisoformat(history['created'].replace('Z', '+00:00'))
-        author = (history.get('author') or {}).get('displayName', 'Unknown')
-        created_str = created.strftime('%Y-%m-%d %H:%M')
+    if hasattr(issue, 'changelog') and issue.changelog:
+        histories = issue.changelog.histories if hasattr(issue.changelog, 'histories') else []
+        for history in histories:
+            created_str_raw = history.created if hasattr(history, 'created') else None
+            if not created_str_raw:
+                continue
+            created = datetime.fromisoformat(str(created_str_raw).replace('Z', '+00:00'))
+            author_obj = history.author if hasattr(history, 'author') else None
+            author = author_obj.displayName if author_obj and hasattr(author_obj, 'displayName') else 'Unknown'
+            created_str = created.strftime('%Y-%m-%d %H:%M')
 
-        for item in (history.get('items') or []):
-            field = item.get('field', '')
-            from_val = item.get('fromString', 'None')
-            to_val = item.get('toString', 'None')
-            ticket_details['changes'].append({
+            items = history.items if hasattr(history, 'items') else []
+            for item in items:
+                field = item.field if hasattr(item, 'field') else ''
+                from_val = item.fromString if hasattr(item, 'fromString') else 'None'
+                to_val = item.toString if hasattr(item, 'toString') else 'None'
+                ticket_details['changes'].append({
+                    'date': created_str,
+                    'date_iso': created.isoformat(),  # Store ISO for filtering
+                    'author': author,
+                    'field': field,
+                    'from': from_val if from_val else 'None',
+                    'to': to_val if to_val else 'None'
+                })
+
+    # Extract ALL comments (no date filtering)
+    comment_data = getattr(fields, 'comment', None)
+    if comment_data:
+        comments = comment_data.comments if hasattr(comment_data, 'comments') else []
+        for comment in comments:
+            created_str_raw = comment.created if hasattr(comment, 'created') else None
+            if not created_str_raw:
+                continue
+            created = datetime.fromisoformat(str(created_str_raw).replace('Z', '+00:00'))
+            author_obj = comment.author if hasattr(comment, 'author') else None
+            author = author_obj.displayName if author_obj and hasattr(author_obj, 'displayName') else 'Unknown'
+            created_str = created.strftime('%Y-%m-%d %H:%M')
+            body = comment.body if hasattr(comment, 'body') else ''
+            ticket_details['comments'].append({
                 'date': created_str,
                 'date_iso': created.isoformat(),  # Store ISO for filtering
                 'author': author,
-                'field': field,
-                'from': from_val,
-                'to': to_val
+                'body': body
             })
-
-    # Extract ALL comments (no date filtering)
-    comment_data = fields.get('comment') or {}
-    comments = comment_data.get('comments') or []
-    for comment in comments:
-        created = datetime.fromisoformat(comment['created'].replace('Z', '+00:00'))
-        author = (comment.get('author') or {}).get('displayName', 'Unknown')
-        created_str = created.strftime('%Y-%m-%d %H:%M')
-        body = comment.get('body', '')
-        ticket_details['comments'].append({
-            'date': created_str,
-            'date_iso': created.isoformat(),  # Store ISO for filtering
-            'author': author,
-            'body': body
-        })
 
     # Cache the FULL result (all changes and comments)
     cache[cache_key] = {
@@ -374,6 +349,9 @@ def get_custom_field_id(field_name):
     """Get custom field ID by name, with caching"""
     global custom_field_cache
 
+    if not jira_client:
+        return None
+
     # Return from cache if available
     if field_name in custom_field_cache:
         return custom_field_cache[field_name]
@@ -381,21 +359,14 @@ def get_custom_field_id(field_name):
     # Fetch all fields from JIRA if cache is empty
     if not custom_field_cache:
         try:
-            api_version = get_api_version()
-            response = requests.get(
-                f"{jira_config['host']}/rest/api/{api_version}/field",
-                headers=get_auth_headers(),
-                timeout=10
-            )
-            if response.ok:
-                fields = response.json()
-                # Build cache mapping from field names to field IDs
-                for field in fields:
-                    if field.get('custom'):
-                        name = field.get('name', '').lower()
-                        field_id = field.get('id')
-                        if name and field_id:
-                            custom_field_cache[name] = field_id
+            fields = jira_client.fields()
+            # Build cache mapping from field names to field IDs
+            for field in fields:
+                if field.get('custom'):
+                    name = field.get('name', '').lower()
+                    field_id = field.get('id')
+                    if name and field_id:
+                        custom_field_cache[name] = field_id
         except Exception as e:
             print(f"Warning: Could not fetch custom fields: {e}")
 
@@ -454,7 +425,7 @@ def get_sprint_field_id():
 
 @app.route('/api/search', methods=['POST'])
 def search_issues():
-    if not jira_config['host']:
+    if not jira_client:
         return jsonify({'error': 'JIRA not configured'}), 400
 
     data = request.json
@@ -484,42 +455,19 @@ def search_issues():
         if sprint_field:
             fields.append(sprint_field)
 
-        api_version = get_api_version()
-        # JIRA Cloud requires /search/jql endpoint (v3), Server/DC uses /search (v2)
-        if api_version == '3':
-            url = f"{jira_config['host']}/rest/api/3/search/jql"
-        else:
-            url = f"{jira_config['host']}/rest/api/2/search"
-
-        response = requests.post(
-            url,
-            headers=get_auth_headers(),
-            json={
-                'jql': jql,
-                'maxResults': 100,
-                'fields': fields
-            },
-            timeout=30
+        # Use library search
+        issues = jira_client.search_issues(
+            jql_str=jql,
+            maxResults=100,
+            fields=','.join(fields)
         )
 
-        # Enhanced error handling
-        if not response.ok:
-            error_detail = f"HTTP {response.status_code} for {url}"
-            try:
-                error_body = response.json()
-                error_detail += f" - {error_body}"
-            except:
-                error_detail += f" - {response.text[:200]}"
-            print(f"JIRA API Error: {error_detail}")
-            response.raise_for_status()
-
-        result = response.json()
-
+        # Process results
         tickets = []
         epic_keys = set()
         parent_keys = set()
 
-        for issue in result.get('issues', []):
+        for issue in issues:
             ticket = parse_issue(issue)
             tickets.append(ticket)
             if ticket.get('epicKey'):
@@ -527,37 +475,23 @@ def search_issues():
             if ticket.get('parentKey'):
                 parent_keys.add(ticket['parentKey'])
 
-        # Fetch epic summaries
+        # Fetch epic summaries using library
         epic_summaries = {}
         for epic_key in epic_keys:
             try:
-                epic_response = requests.get(
-                    f"{jira_config['host']}/rest/api/{api_version}/issue/{epic_key}",
-                    headers=get_auth_headers(),
-                    params={'fields': 'summary'},
-                    timeout=10
-                )
-                if epic_response.ok:
-                    epic_data = epic_response.json()
-                    epic_summaries[epic_key] = epic_data.get('fields', {}).get('summary', epic_key)
+                epic = jira_client.issue(epic_key, fields='summary')
+                epic_summaries[epic_key] = epic.fields.summary if hasattr(epic.fields, 'summary') else epic_key
             except:
                 epic_summaries[epic_key] = epic_key
 
-        # Fetch parent summaries
+        # Fetch parent summaries using library
         parent_summaries = {}
         for parent_key in parent_keys:
             # Skip if already fetched as epic
             if parent_key not in epic_summaries:
                 try:
-                    parent_response = requests.get(
-                        f"{jira_config['host']}/rest/api/{api_version}/issue/{parent_key}",
-                        headers=get_auth_headers(),
-                        params={'fields': 'summary'},
-                        timeout=10
-                    )
-                    if parent_response.ok:
-                        parent_data = parent_response.json()
-                        parent_summaries[parent_key] = parent_data.get('fields', {}).get('summary', parent_key)
+                    parent = jira_client.issue(parent_key, fields='summary')
+                    parent_summaries[parent_key] = parent.fields.summary if hasattr(parent.fields, 'summary') else parent_key
                 except:
                     parent_summaries[parent_key] = parent_key
             else:
@@ -579,36 +513,34 @@ def search_issues():
 
         for ticket in in_progress_tickets:
             try:
-                changelog_response = requests.get(
-                    f"{jira_config['host']}/rest/api/{api_version}/issue/{ticket['key']}",
-                    headers=get_auth_headers(),
-                    params={'expand': 'changelog', 'fields': 'status'},
-                    timeout=10
+                # Fetch with changelog expanded using library
+                issue_with_changelog = jira_client.issue(
+                    ticket['key'],
+                    expand='changelog',
+                    fields='status'
                 )
-                if changelog_response.ok:
-                    issue_data = changelog_response.json()
-                    changelog = issue_data.get('changelog', {})
-                    if changelog:
-                        histories = changelog.get('histories', [])
-                        # Look for most recent status change
-                        for history in reversed(histories):
-                            for item in history.get('items', []):
-                                if item.get('field') == 'status':
-                                    ticket['statusChangeDate'] = history.get('created')
-                                    break
-                            if ticket.get('statusChangeDate'):
+                if hasattr(issue_with_changelog, 'changelog') and issue_with_changelog.changelog:
+                    histories = issue_with_changelog.changelog.histories if hasattr(issue_with_changelog.changelog, 'histories') else []
+                    # Look for most recent status change
+                    for history in reversed(histories):
+                        items = history.items if hasattr(history, 'items') else []
+                        for item in items:
+                            if hasattr(item, 'field') and item.field == 'status':
+                                ticket['statusChangeDate'] = history.created if hasattr(history, 'created') else None
                                 break
+                        if ticket.get('statusChangeDate'):
+                            break
             except:
                 # If fetching changelog fails, just skip it
                 pass
 
         return jsonify({'tickets': tickets})
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/issue/<issue_key>', methods=['GET'])
 def get_issue(issue_key):
-    if not jira_config['host']:
+    if not jira_client:
         return jsonify({'error': 'JIRA not configured'}), 400
 
     try:
@@ -632,36 +564,31 @@ def get_issue(issue_key):
         if sprint_field:
             fields.append(sprint_field)
 
-        api_version = get_api_version()
-        response = requests.get(
-            f"{jira_config['host']}/rest/api/{api_version}/issue/{issue_key}",
-            headers=get_auth_headers(),
-            params={
-                'fields': ','.join(fields),
-                'expand': 'changelog'
-            },
-            timeout=10
+        # Use library to fetch issue
+        issue = jira_client.issue(
+            issue_key,
+            fields=','.join(fields),
+            expand='changelog'
         )
-        response.raise_for_status()
-        issue = response.json()
 
         return jsonify(parse_issue(issue))
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 def parse_issue(issue):
-    fields = issue.get('fields', {})
-    status = fields.get('status', {}) or {}
-    assignee = fields.get('assignee') or {}
-    reporter = fields.get('reporter') or {}
-    priority = fields.get('priority') or {}
-    issuetype = fields.get('issuetype', {}) or {}
+    """Parse JIRA library Issue object into dict format"""
+    fields = issue.fields
+    status = fields.status if hasattr(fields, 'status') else None
+    assignee = fields.assignee if hasattr(fields, 'assignee') else None
+    reporter = fields.reporter if hasattr(fields, 'reporter') else None
+    priority = fields.priority if hasattr(fields, 'priority') else None
+    issuetype = fields.issuetype if hasattr(fields, 'issuetype') else None
 
     # Get estimation value from custom field (Option 3: handle different types)
     story_points = None
     estimation_field = get_estimation_field_id()
     if estimation_field:
-        estimation_value = fields.get(estimation_field)
+        estimation_value = getattr(fields, estimation_field, None)
         if estimation_value is not None:
             # Handle numeric values (story points, hours, etc.)
             if isinstance(estimation_value, (int, float)):
@@ -685,7 +612,7 @@ def parse_issue(issue):
     sprint_state = None
     sprint_field_id = get_sprint_field_id()
     if sprint_field_id:
-        sprint_data = fields.get(sprint_field_id)
+        sprint_data = getattr(fields, sprint_field_id, None)
         if sprint_data:
             # Sprint data can be an array of sprint objects or strings
             if isinstance(sprint_data, list) and len(sprint_data) > 0:
@@ -714,14 +641,14 @@ def parse_issue(issue):
     epic_name = None
 
     # Try parent field first (standard field, used in JIRA Cloud native hierarchies and subtasks)
-    parent = fields.get('parent')
+    parent = getattr(fields, 'parent', None)
     if parent:
-        parent_key = parent.get('key')
-        parent_name = parent.get('fields', {}).get('summary', parent_key)
+        parent_key = parent.key if hasattr(parent, 'key') else None
+        parent_name = parent.fields.summary if hasattr(parent, 'fields') and hasattr(parent.fields, 'summary') else parent_key
 
         # Check if parent is an Epic (JIRA Cloud native hierarchy)
-        parent_issuetype = parent.get('fields', {}).get('issuetype', {}) or {}
-        parent_type_name = parent_issuetype.get('name', '')
+        parent_issuetype = parent.fields.issuetype if hasattr(parent, 'fields') and hasattr(parent.fields, 'issuetype') else None
+        parent_type_name = parent_issuetype.name if parent_issuetype and hasattr(parent_issuetype, 'name') else ''
 
         if parent_type_name.lower() == 'epic':
             # Parent is an Epic, so populate both epic and parent
@@ -732,7 +659,7 @@ def parse_issue(issue):
     if not epic_key:
         epic_link_field = get_custom_field_id('Epic Link')
         if epic_link_field:
-            epic_link = fields.get(epic_link_field)
+            epic_link = getattr(fields, epic_link_field, None)
             if epic_link:
                 epic_key = epic_link
                 epic_name = epic_link
@@ -741,65 +668,68 @@ def parse_issue(issue):
     if not parent_key:
         parent_link_field = get_custom_field_id('Parent Link')
         if parent_link_field:
-            parent_link = fields.get(parent_link_field)
+            parent_link = getattr(fields, parent_link_field, None)
             if parent_link:
                 parent_key = parent_link
                 parent_name = parent_link  # Will be fetched later
 
     # Get issue links (blocks, depends on, etc.)
     issue_links = []
-    for link in fields.get('issuelinks', []):
-        link_type = link.get('type', {}).get('name', '')
-        if 'outwardIssue' in link:
+    issuelinks = getattr(fields, 'issuelinks', []) or []
+    for link in issuelinks:
+        if hasattr(link, 'outwardIssue'):
+            outward = link.outwardIssue
             issue_links.append({
-                'type': link.get('type', {}).get('outward', ''),
-                'key': link['outwardIssue'].get('key'),
-                'summary': link['outwardIssue'].get('fields', {}).get('summary', '')
+                'type': link.type.outward if hasattr(link.type, 'outward') else '',
+                'key': outward.key if hasattr(outward, 'key') else '',
+                'summary': outward.fields.summary if hasattr(outward, 'fields') and hasattr(outward.fields, 'summary') else ''
             })
-        if 'inwardIssue' in link:
+        if hasattr(link, 'inwardIssue'):
+            inward = link.inwardIssue
             issue_links.append({
-                'type': link.get('type', {}).get('inward', ''),
-                'key': link['inwardIssue'].get('key'),
-                'summary': link['inwardIssue'].get('fields', {}).get('summary', '')
+                'type': link.type.inward if hasattr(link.type, 'inward') else '',
+                'key': inward.key if hasattr(inward, 'key') else '',
+                'summary': inward.fields.summary if hasattr(inward, 'fields') and hasattr(inward.fields, 'summary') else ''
             })
 
     # Get subtasks
     subtasks = []
-    for subtask in fields.get('subtasks', []):
+    subtasks_list = getattr(fields, 'subtasks', []) or []
+    for subtask in subtasks_list:
         subtasks.append({
-            'key': subtask.get('key'),
-            'summary': subtask.get('fields', {}).get('summary', ''),
-            'status': subtask.get('fields', {}).get('status', {}).get('name', 'Unknown')
+            'key': subtask.key if hasattr(subtask, 'key') else '',
+            'summary': subtask.fields.summary if hasattr(subtask, 'fields') and hasattr(subtask.fields, 'summary') else '',
+            'status': subtask.fields.status.name if hasattr(subtask, 'fields') and hasattr(subtask.fields, 'status') and hasattr(subtask.fields.status, 'name') else 'Unknown'
         })
 
     # Get resolution
-    resolution = fields.get('resolution')
-    resolution_name = resolution.get('name') if resolution else None
+    resolution = getattr(fields, 'resolution', None)
+    resolution_name = resolution.name if resolution and hasattr(resolution, 'name') else None
 
     # Get status change date from changelog
     status_change_date = None
-    changelog = issue.get('changelog', {})
-    if changelog:
-        histories = changelog.get('histories', [])
+    if hasattr(issue, 'changelog') and issue.changelog:
+        histories = issue.changelog.histories if hasattr(issue.changelog, 'histories') else []
         # Look for most recent status change
         for history in reversed(histories):
-            for item in history.get('items', []):
-                if item.get('field') == 'status':
-                    status_change_date = history.get('created')
+            items = history.items if hasattr(history, 'items') else []
+            for item in items:
+                if hasattr(item, 'field') and item.field == 'status':
+                    status_change_date = history.created if hasattr(history, 'created') else None
                     break
             if status_change_date:
                 break
 
     return {
-        'key': issue.get('key'),
-        'summary': fields.get('summary', ''),
-        'status': status.get('name', 'Unknown'),
-        'statusCategory': status.get('statusCategory', {}).get('key', 'other'),
-        'assignee': assignee.get('displayName', 'Unassigned') if assignee else 'Unassigned',
-        'reporter': reporter.get('displayName', 'Unknown') if reporter else 'Unknown',
-        'priority': priority.get('name', 'None') if priority else 'None',
+        'key': issue.key,
+        'summary': fields.summary if hasattr(fields, 'summary') else '',
+        'status': status.name if status and hasattr(status, 'name') else 'Unknown',
+        'statusCategory': status.statusCategory.key if status and hasattr(status, 'statusCategory') and hasattr(status.statusCategory, 'key') else 'other',
+        'assignee': assignee.displayName if assignee and hasattr(assignee, 'displayName') else 'Unassigned',
+        'reporter': reporter.displayName if reporter and hasattr(reporter, 'displayName') else 'Unknown',
+        'priority': priority.name if priority and hasattr(priority, 'name') else 'None',
         'storyPoints': story_points,
-        'type': issuetype.get('name', 'Task'),
+        'type': issuetype.name if issuetype and hasattr(issuetype, 'name') else 'Task',
         'epicKey': epic_key,
         'epicName': epic_name,
         'parentKey': parent_key,
@@ -871,62 +801,68 @@ def export_workstream_markdown():
         markdown += "## Tickets\n\n"
 
         # Fetch full details for each ticket
-        api_version = get_api_version()
         for key in ticket_keys:
             try:
-                response = requests.get(
-                    f"{jira_config['host']}/rest/api/{api_version}/issue/{key}",
-                    headers=get_auth_headers(),
-                    params={'expand': 'changelog'},
-                    timeout=10
-                )
+                if not jira_client:
+                    raise Exception('JIRA client not configured')
 
-                if response.ok:
-                    issue = response.json()
-                    fields = issue.get('fields', {})
+                # Use library to fetch issue with changelog
+                issue = jira_client.issue(key, expand='changelog')
+                fields = issue.fields
 
-                    # Ticket header
-                    markdown += f"### {key}: {fields.get('summary', 'No summary')}\n\n"
-                    markdown += f"- **Status:** {fields.get('status', {}).get('name', 'Unknown')}\n"
-                    markdown += f"- **Assignee:** {fields.get('assignee', {}).get('displayName', 'Unassigned')}\n"
-                    markdown += f"- **Priority:** {fields.get('priority', {}).get('name', 'None')}\n"
+                # Ticket header
+                summary = getattr(fields, 'summary', 'No summary')
+                status = getattr(fields, 'status', None)
+                assignee = getattr(fields, 'assignee', None)
+                priority = getattr(fields, 'priority', None)
 
-                    # Add estimation if available
-                    for field_name in ['Story Points', 'Story point estimate', 'customfield_10016', 'customfield_10026']:
-                        if field_name in fields and fields[field_name]:
-                            markdown += f"- **Estimation:** {fields[field_name]}\n"
-                            break
+                markdown += f"### {key}: {summary}\n\n"
+                markdown += f"- **Status:** {status.name if status and hasattr(status, 'name') else 'Unknown'}\n"
+                markdown += f"- **Assignee:** {assignee.displayName if assignee and hasattr(assignee, 'displayName') else 'Unassigned'}\n"
+                markdown += f"- **Priority:** {priority.name if priority and hasattr(priority, 'name') else 'None'}\n"
 
-                    markdown += f"- **URL:** {jira_config['host']}/browse/{key}\n\n"
+                # Add estimation if available
+                estimation_field_id = get_estimation_field_id()
+                if estimation_field_id:
+                    estimation_value = getattr(fields, estimation_field_id, None)
+                    if estimation_value:
+                        markdown += f"- **Estimation:** {estimation_value}\n"
 
-                    # Description
-                    description = fields.get('description', '')
-                    if description:
-                        markdown += f"**Description:**\n{description[:500]}{'...' if len(description) > 500 else ''}\n\n"
+                markdown += f"- **URL:** {jira_config['host']}/browse/{key}\n\n"
 
-                    # Changelog
-                    changelog = issue.get('changelog', {})
-                    recent_changes = []
+                # Description
+                description = getattr(fields, 'description', '')
+                if description:
+                    markdown += f"**Description:**\n{description[:500]}{'...' if len(description) > 500 else ''}\n\n"
 
-                    for history in changelog.get('histories', []):
-                        created = datetime.fromisoformat(history['created'].replace('Z', '+00:00'))
+                # Changelog
+                recent_changes = []
+                if hasattr(issue, 'changelog') and issue.changelog:
+                    histories = issue.changelog.histories if hasattr(issue.changelog, 'histories') else []
+                    for history in histories:
+                        created_str_raw = history.created if hasattr(history, 'created') else None
+                        if not created_str_raw:
+                            continue
+                        created = datetime.fromisoformat(str(created_str_raw).replace('Z', '+00:00'))
                         if created >= cutoff_date:
-                            author = history.get('author', {}).get('displayName', 'Unknown')
+                            author_obj = history.author if hasattr(history, 'author') else None
+                            author = author_obj.displayName if author_obj and hasattr(author_obj, 'displayName') else 'Unknown'
                             created_str = created.strftime('%Y-%m-%d %H:%M')
 
-                            for item in history.get('items', []):
-                                field = item.get('field', '')
-                                from_val = item.get('fromString', 'None')
-                                to_val = item.get('toString', 'None')
+                            items = history.items if hasattr(history, 'items') else []
+                            for item in items:
+                                field = item.field if hasattr(item, 'field') else ''
+                                from_val = item.fromString if hasattr(item, 'fromString') else 'None'
+                                to_val = item.toString if hasattr(item, 'toString') else 'None'
                                 recent_changes.append(f"- `{created_str}` **{author}**: {field} changed from `{from_val}` to `{to_val}`")
 
-                    if recent_changes:
-                        markdown += f"**Recent Changes (Last {days} days):**\n"
-                        markdown += "\n".join(recent_changes) + "\n\n"
-                    else:
-                        markdown += f"*No changes in the last {days} days*\n\n"
+                if recent_changes:
+                    markdown += f"**Recent Changes (Last {days} days):**\n"
+                    markdown += "\n".join(recent_changes) + "\n\n"
+                else:
+                    markdown += f"*No changes in the last {days} days*\n\n"
 
-                    markdown += "---\n\n"
+                markdown += "---\n\n"
 
             except Exception as e:
                 print(f"Error fetching {key}: {e}")
@@ -1073,9 +1009,7 @@ if __name__ == '__main__':
     print('=' * 60)
 
     if jira_config['host'] and jira_config['token']:
-        api_version = get_api_version()
         print(f'JIRA Host: {jira_config["host"]}')
-        print(f'API Version: v{api_version}')
         if jira_config['email']:
             print(f'Auth Mode: Cloud (email: {jira_config["email"]})')
         else:

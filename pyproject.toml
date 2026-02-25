@@ -10,4 +10,5 @@ dependencies = [
     "flask-cors>=6.0.2",
     "requests>=2.32.5",
     "openai>=1.58.1",
+    "jira>=3.10.5",
 ]
