@@ -1908,9 +1908,6 @@
 
         async function loadWorkstreams() {
             try {
-                // First, try to load from localStorage as backup
-                const localBackup = localStorage.getItem('workstreams');
-
                 const response = await fetch(`${API_BASE}/workstreams`);
                 if (response.ok) {
                     const serverData = await response.json();
@@ -1932,33 +1929,6 @@
                         data.currentPageId = data.pages[0].id;
                         await saveWorkstreams();
                         console.log('Migrated old workstreams format to pages');
-                    } else if (localBackup) {
-                        // Server has no data, try localStorage
-                        try {
-                            const parsed = JSON.parse(localBackup);
-
-                            // Check if it's in new format
-                            if (parsed.pages && parsed.pages.length > 0) {
-                                data = parsed;
-                                await saveWorkstreams();
-                                console.log('Recovered data from localStorage backup (new format)');
-                            } else if (Array.isArray(parsed) && parsed.length > 0) {
-                                // Old format in localStorage
-                                data.pages = [{
-                                    id: Date.now(),
-                                    name: 'Main',
-                                    workstreams: parsed.map(ws => ({
-                                        ...ws,
-                                        tickets: ws.tickets || undefined
-                                    }))
-                                }];
-                                data.currentPageId = data.pages[0].id;
-                                await saveWorkstreams();
-                                console.log('Recovered and migrated workstreams from localStorage');
-                            }
-                        } catch (e) {
-                            console.error('Failed to parse localStorage:', e);
-                        }
                     }
 
                     // Ensure we have at least one page
@@ -1992,46 +1962,9 @@
                     }
                 } else {
                     console.error('Failed to load workstreams from server');
-                    // Try localStorage recovery
-                    if (localBackup) {
-                        const parsed = JSON.parse(localBackup);
-                        if (parsed.pages) {
-                            data = parsed;
-                        } else if (Array.isArray(parsed)) {
-                            data.pages = [{
-                                id: Date.now(),
-                                name: 'Main',
-                                workstreams: parsed
-                            }];
-                            data.currentPageId = data.pages[0].id;
-                        }
-                    }
                 }
             } catch (error) {
                 console.error('Error loading workstreams:', error);
-                // Try localStorage as last resort
-                try {
-                    const localBackup = localStorage.getItem('workstreams');
-                    if (localBackup) {
-                        const parsed = JSON.parse(localBackup);
-                        if (parsed.pages) {
-                            data = parsed;
-                        } else if (Array.isArray(parsed)) {
-                            data.pages = [{
-                                id: Date.now(),
-                                name: 'Main',
-                                workstreams: parsed.map(ws => ({
-                                    ...ws,
-                                    tickets: ws.tickets || undefined
-                                }))
-                            }];
-                            data.currentPageId = data.pages[0].id;
-                        }
-                        console.log('Recovered from localStorage after error');
-                    }
-                } catch (e) {
-                    console.error('Failed localStorage recovery:', e);
-                }
 
                 // Final fallback
                 if (!data.pages || data.pages.length === 0) {
@@ -2046,20 +1979,6 @@
         }
 
         async function saveWorkstreams() {
-            // Always save to localStorage first (backup)
-            try {
-                localStorage.setItem('workstreams', JSON.stringify(data));
-                localStorage.setItem('workstreams_backup_' + Date.now(), JSON.stringify(data));
-
-                // Keep only last 5 backups
-                const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('workstreams_backup_'));
-                if (backupKeys.length > 5) {
-                    backupKeys.sort().slice(0, backupKeys.length - 5).forEach(k => localStorage.removeItem(k));
-                }
-            } catch (e) {
-                console.error('Failed to save to localStorage:', e);
-            }
-
             // Save to server
             try {
                 const response = await fetch(`${API_BASE}/workstreams`, {
@@ -4724,76 +4643,7 @@
             alert(`Exported ${workstream.tickets.length} tickets to ${filename}`);
         }
 
-        // Recovery function - can be called from browser console
-        window.recoverFromLocalStorage = function() {
-            console.log('Checking localStorage for backups...');
-
-            const mainBackup = localStorage.getItem('workstreams');
-            if (mainBackup) {
-                console.log('Found main backup:', mainBackup);
-            }
-
-            const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('workstreams_backup_'));
-            console.log(`Found ${backupKeys.length} timestamped backups`);
-
-            backupKeys.sort().reverse().forEach((key, i) => {
-                const timestamp = key.replace('workstreams_backup_', '');
-                const date = new Date(parseInt(timestamp));
-                const backup = localStorage.getItem(key);
-                console.log(`Backup ${i + 1} (${date.toLocaleString()}):`, backup);
-            });
-
-            if (mainBackup || backupKeys.length > 0) {
-                console.log('\nTo recover, run: window.restoreBackup(backupNumber)');
-                console.log('Example: window.restoreBackup(1) for the most recent backup');
-            } else {
-                console.log('No backups found in localStorage');
-            }
-        };
-
-        window.restoreBackup = async function(backupNumber = 0) {
-            let backupData;
-
-            if (backupNumber === 0) {
-                // Restore from main backup
-                backupData = localStorage.getItem('workstreams');
-            } else {
-                // Restore from timestamped backup
-                const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('workstreams_backup_')).sort().reverse();
-                if (backupNumber <= backupKeys.length) {
-                    backupData = localStorage.getItem(backupKeys[backupNumber - 1]);
-                } else {
-                    console.error('Backup number out of range');
-                    return;
-                }
-            }
-
-            if (backupData) {
-                try {
-                    const parsed = JSON.parse(backupData);
-                    if (parsed.pages) {
-                        data = parsed;
-                    } else if (Array.isArray(parsed)) {
-                        data.pages = [{
-                            id: Date.now(),
-                            name: 'Main',
-                            workstreams: parsed
-                        }];
-                        data.currentPageId = data.pages[0].id;
-                    }
-
-                    await saveWorkstreams();
-                    renderTabs();
-                    renderWorkstreams();
-                    console.log('Backup restored successfully!');
-                    alert('Backup restored! Your data should be back.');
-                } catch (e) {
-                    console.error('Failed to restore backup:', e);
-                }
-            } else {
-                console.log('No backup data found');
-            }
-        };
+        // Recovery functions removed - all data now server-side only
 
         init();
     </script>

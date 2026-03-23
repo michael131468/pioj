@@ -133,7 +133,7 @@ filtered_data = filter_ticket_data_by_date(cached_data, days)
 - `workstreams.json` is source of truth (server-side)
 - Auto-save on every frontend change via POST to `/api/workstreams`
 - Auto-backups created, keeps last 5
-- LocalStorage only for theme preference and emergency backup
+- LocalStorage only for theme preference (dark/light mode)
 
 ### 8. Data Model
 
@@ -320,7 +320,6 @@ Use `statusCategory.key` from JIRA API.
 
 - `migrateWorkstream()` handles legacy data formats
 - Old operation types (UNION, INTERSECT, etc.) migrated to SET_OPERATION
-- LocalStorage used as emergency backup if server unavailable
 - Check git history for migration patterns before breaking changes
 
 ## Security
