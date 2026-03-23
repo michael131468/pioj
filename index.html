@@ -1911,17 +1911,18 @@
                 const response = await fetch(`${API_BASE}/workstreams`);
                 if (response.ok) {
                     const serverData = await response.json();
+                    const workstreams = serverData.workstreams;
 
                     // Check if data is in new format (with pages)
-                    if (serverData.pages && serverData.pages.length > 0) {
-                        data = serverData;
+                    if (workstreams && workstreams.pages && workstreams.pages.length > 0) {
+                        data = workstreams;
                         console.log('Loaded data from server (new format)');
-                    } else if (serverData.workstreams && serverData.workstreams.length > 0) {
+                    } else if (Array.isArray(workstreams) && workstreams.length > 0) {
                         // Migrate old format to new format
                         data.pages = [{
                             id: Date.now(),
                             name: 'Main',
-                            workstreams: serverData.workstreams.map(ws => ({
+                            workstreams: workstreams.map(ws => ({
                                 ...ws,
                                 tickets: ws.tickets || undefined  // Preserve existing tickets or set to undefined
                             }))
