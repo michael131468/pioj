@@ -2575,8 +2575,8 @@
                                     </div>
                                 </div>
                                 <div class="tree-controls ${ws.view === 'tree' ? '' : 'hidden'}">
-                                    <button onclick="expandAllTreeNodes()" class="tree-control-button">Expand All</button>
-                                    <button onclick="collapseAllTreeNodes()" class="tree-control-button">Collapse All</button>
+                                    <button onclick="expandAllTreeNodes('${ws.id}')" class="tree-control-button">Expand All</button>
+                                    <button onclick="collapseAllTreeNodes('${ws.id}')" class="tree-control-button">Collapse All</button>
                                 </div>
                             </div>
                         </div>
@@ -4298,12 +4298,14 @@
             }
         }
 
-        function expandAllTreeNodes() {
-            const treeChildren = document.querySelectorAll('.tree-children');
+        function expandAllTreeNodes(workstreamId) {
+            const workstream = document.getElementById(`workstream-${workstreamId}`);
+            if (!workstream) return;
+            const treeChildren = workstream.querySelectorAll('.tree-children');
             treeChildren.forEach(node => {
                 node.style.display = 'block';
             });
-            const toggles = document.querySelectorAll('.tree-toggle');
+            const toggles = workstream.querySelectorAll('.tree-toggle');
             toggles.forEach(toggle => {
                 if (toggle.textContent === '▶') {
                     toggle.textContent = '▼';
@@ -4311,12 +4313,14 @@
             });
         }
 
-        function collapseAllTreeNodes() {
-            const treeChildren = document.querySelectorAll('.tree-children');
+        function collapseAllTreeNodes(workstreamId) {
+            const workstream = document.getElementById(`workstream-${workstreamId}`);
+            if (!workstream) return;
+            const treeChildren = workstream.querySelectorAll('.tree-children');
             treeChildren.forEach(node => {
                 node.style.display = 'none';
             });
-            const toggles = document.querySelectorAll('.tree-toggle');
+            const toggles = workstream.querySelectorAll('.tree-toggle');
             toggles.forEach(toggle => {
                 if (toggle.textContent === '▼') {
                     toggle.textContent = '▶';
