@@ -2640,6 +2640,13 @@
                 </div>
             `;
             }).join('');
+
+            // Restore tree collapse state for all workstreams in tree view
+            workstreams.forEach(ws => {
+                if (ws.view === 'tree' && ws.tickets) {
+                    setTimeout(() => restoreTreeState(ws.id), 0);
+                }
+            });
         }
 
         function editWorkstream(index) {
@@ -2994,6 +3001,9 @@
                 // Initialize all queries with pending state
                 workstream.queryResults = queries.map(q => ({ loading: false, pending: true }));
                 container.innerHTML = renderWorkstreamContent(workstream, index);
+                if (workstream.view === 'tree') {
+                    setTimeout(() => restoreTreeState(workstream.id), 0);
+                }
 
                 for (let i = 0; i < queries.length; i++) {
                     const query = queries[i];
@@ -3006,6 +3016,9 @@
                     queryResults[i] = { loading: true };
                     workstream.queryResults = queryResults;
                     container.innerHTML = renderWorkstreamContent(workstream, index);
+                    if (workstream.view === 'tree') {
+                        setTimeout(() => restoreTreeState(workstream.id), 0);
+                    }
 
                     try {
                         if (queryType === 'JQL') {
@@ -3082,6 +3095,9 @@
                     // Update UI after each query completes
                     workstream.queryResults = queryResults;
                     container.innerHTML = renderWorkstreamContent(workstream, index);
+                    if (workstream.view === 'tree') {
+                        setTimeout(() => restoreTreeState(workstream.id), 0);
+                    }
                 }
 
                 // Final results are from the last query
@@ -3570,6 +3586,9 @@
             const container = document.getElementById(`workstream-content-${index}`);
             if (ws.queryResults && ws.queryResults.length > 0) {
                 container.innerHTML = renderWorkstreamContent(ws, index);
+                if (ws.view === 'tree') {
+                    setTimeout(() => restoreTreeState(ws.id), 0);
+                }
             }
         }
 
@@ -3586,6 +3605,9 @@
             const container = document.getElementById(`workstream-content-${index}`);
             if (ws.queryResults && ws.queryResults.length > 0) {
                 container.innerHTML = renderWorkstreamContent(ws, index);
+                if (ws.view === 'tree') {
+                    setTimeout(() => restoreTreeState(ws.id), 0);
+                }
             }
         }
 
@@ -4285,16 +4307,78 @@
             return '📄';
         }
 
+        function getTreeState(workstreamId) {
+            try {
+                const stored = localStorage.getItem('treeState');
+                if (!stored) return {};
+                const allState = JSON.parse(stored);
+                return allState[workstreamId] || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveTreeState(workstreamId, nodeId, isCollapsed) {
+            try {
+                const stored = localStorage.getItem('treeState');
+                const allState = stored ? JSON.parse(stored) : {};
+                if (!allState[workstreamId]) {
+                    allState[workstreamId] = {};
+                }
+                allState[workstreamId][nodeId] = isCollapsed;
+                localStorage.setItem('treeState', JSON.stringify(allState));
+            } catch (e) {
+                console.error('Failed to save tree state:', e);
+            }
+        }
+
+        function clearTreeState(workstreamId) {
+            try {
+                const stored = localStorage.getItem('treeState');
+                if (!stored) return;
+                const allState = JSON.parse(stored);
+                delete allState[workstreamId];
+                localStorage.setItem('treeState', JSON.stringify(allState));
+            } catch (e) {
+                console.error('Failed to clear tree state:', e);
+            }
+        }
+
+        function restoreTreeState(workstreamId) {
+            const state = getTreeState(workstreamId);
+            Object.entries(state).forEach(([nodeId, isCollapsed]) => {
+                const node = document.getElementById(nodeId);
+                if (node) {
+                    const toggle = node.previousElementSibling?.querySelector('.tree-toggle');
+                    if (isCollapsed) {
+                        node.style.display = 'none';
+                        if (toggle) toggle.textContent = '▶';
+                    } else {
+                        node.style.display = 'block';
+                        if (toggle) toggle.textContent = '▼';
+                    }
+                }
+            });
+        }
+
         function toggleTreeNode(nodeId) {
             const node = document.getElementById(nodeId);
             if (node) {
                 const toggle = node.previousElementSibling?.querySelector('.tree-toggle');
-                if (node.style.display === 'none') {
-                    node.style.display = 'block';
-                    if (toggle) toggle.textContent = '▼';
-                } else {
+                const isCollapsed = node.style.display !== 'none';
+                if (isCollapsed) {
                     node.style.display = 'none';
                     if (toggle) toggle.textContent = '▶';
+                } else {
+                    node.style.display = 'block';
+                    if (toggle) toggle.textContent = '▼';
+                }
+
+                // Find workstream ID from the node
+                const workstreamEl = node.closest('[id^="workstream-"]');
+                if (workstreamEl) {
+                    const workstreamId = workstreamEl.id.replace('workstream-', '');
+                    saveTreeState(workstreamId, nodeId, isCollapsed);
                 }
             }
         }
@@ -4305,6 +4389,7 @@
             const treeChildren = workstream.querySelectorAll('.tree-children');
             treeChildren.forEach(node => {
                 node.style.display = 'block';
+                saveTreeState(workstreamId, node.id, false);
             });
             const toggles = workstream.querySelectorAll('.tree-toggle');
             toggles.forEach(toggle => {
@@ -4320,6 +4405,7 @@
             const treeChildren = workstream.querySelectorAll('.tree-children');
             treeChildren.forEach(node => {
                 node.style.display = 'none';
+                saveTreeState(workstreamId, node.id, true);
             });
             const toggles = workstream.querySelectorAll('.tree-toggle');
             toggles.forEach(toggle => {
