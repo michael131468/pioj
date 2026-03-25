@@ -73,6 +73,10 @@ jira_client = initialize_jira_client()
 def index():
     return send_from_directory('.', 'index.html')
 
+@app.route('/favicon.svg')
+def favicon():
+    return send_from_directory('.', 'favicon.svg')
+
 @app.route('/api/config/status', methods=['GET'])
 def config_status():
     """Check if JIRA and LLM are configured"""
