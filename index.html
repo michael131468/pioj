@@ -3974,7 +3974,7 @@
 
         function renderTreeNode(ticket, ticketMap, level, claimedByLinks, queryTickets) {
             const hasChildren = hasTicketChildren(ticket, ticketMap);
-            const toggleId = `toggle-${ticket.key.replace(/[^a-zA-Z0-9]/g, '_')}-${level}`;
+            const toggleId = `toggle-${ticket.key.replace(/[^a-zA-Z0-9]/g, '_')}`;
             // Grey out tickets (including virtual nodes) that aren't in the query
             const notInQuery = !queryTickets.has(ticket.key);
 
@@ -4312,7 +4312,32 @@
                 const stored = localStorage.getItem('treeState');
                 if (!stored) return {};
                 const allState = JSON.parse(stored);
-                return allState[workstreamId] || {};
+                const workstreamState = allState[workstreamId] || {};
+
+                // Migrate old format: remove level suffix from node IDs
+                const migratedState = {};
+                let needsMigration = false;
+                Object.entries(workstreamState).forEach(([nodeId, isCollapsed]) => {
+                    // Check if nodeId ends with -\d+ (e.g., toggle-PROJ_123-0)
+                    const match = nodeId.match(/^(.+)-\d+$/);
+                    if (match) {
+                        // Old format - remove level suffix
+                        migratedState[match[1]] = isCollapsed;
+                        needsMigration = true;
+                    } else {
+                        // New format - keep as is
+                        migratedState[nodeId] = isCollapsed;
+                    }
+                });
+
+                // Save migrated state back to localStorage
+                if (needsMigration) {
+                    allState[workstreamId] = migratedState;
+                    localStorage.setItem('treeState', JSON.stringify(allState));
+                    console.log(`[Tree State] Migrated old format for workstream ${workstreamId}`);
+                }
+
+                return migratedState;
             } catch (e) {
                 return {};
             }
@@ -4346,6 +4371,8 @@
 
         function restoreTreeState(workstreamId) {
             const state = getTreeState(workstreamId);
+            console.log(`[Tree State] Restoring for workstream ${workstreamId}:`, state);
+            let restored = 0, notFound = 0;
             Object.entries(state).forEach(([nodeId, isCollapsed]) => {
                 const node = document.getElementById(nodeId);
                 if (node) {
@@ -4357,8 +4384,13 @@
                         node.style.display = 'block';
                         if (toggle) toggle.textContent = '▼';
                     }
+                    restored++;
+                } else {
+                    console.log(`[Tree State] Node not found: ${nodeId}`);
+                    notFound++;
                 }
             });
+            console.log(`[Tree State] Restored ${restored} nodes, ${notFound} not found`);
         }
 
         function toggleTreeNode(nodeId) {
@@ -4374,10 +4406,11 @@
                     if (toggle) toggle.textContent = '▼';
                 }
 
-                // Find workstream ID from the node
-                const workstreamEl = node.closest('[id^="workstream-"]');
+                // Find workstream ID from the node (look for .swimlane, not just any id starting with workstream-)
+                const workstreamEl = node.closest('.swimlane[id^="workstream-"]');
                 if (workstreamEl) {
                     const workstreamId = workstreamEl.id.replace('workstream-', '');
+                    console.log(`[Tree State] Saving ${nodeId} for workstream ${workstreamId}: collapsed=${isCollapsed}`);
                     saveTreeState(workstreamId, nodeId, isCollapsed);
                 }
             }
