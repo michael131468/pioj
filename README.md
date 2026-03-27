@@ -22,6 +22,20 @@ itself? Here's some potential reasons:
 6. You want a markdown export of your tickets to use for A.I. processing.
 7. You want to keep your magic JIRA understanding to yourself and not share it.
 
+## Screenshots
+
+### Light Mode
+
+<a href="docs/screenshot-1.png"><img src="docs/screenshot-1.png" width="23%" alt="Screenshot 1"></a>
+<a href="docs/screenshot-2.png"><img src="docs/screenshot-2.png" width="23%" alt="Screenshot 2"></a>
+<a href="docs/screenshot-3.png"><img src="docs/screenshot-3.png" width="23%" alt="Screenshot 3"></a>
+<a href="docs/screenshot-4.png"><img src="docs/screenshot-4.png" width="23%" alt="Screenshot 4"></a>
+
+### Dark Mode
+
+<a href="docs/screenshot-5.png"><img src="docs/screenshot-5.png" width="23%" alt="Screenshot 5"></a>
+<a href="docs/screenshot-6.png"><img src="docs/screenshot-6.png" width="23%" alt="Screenshot 6"></a>
+
 ## Features
 
 ### Core Features
