@@ -3912,7 +3912,7 @@
                                                     ${escapeHtml(ticket.status)}
                                                 </span>
                                                 <span class="ticket-assignee">👤 ${escapeHtml(ticket.assignee)}</span>
-                                                ${ticket.storyPoints ? `<span class="ticket-story-points">${ticket.storyPoints} SP</span>` : ''}
+                                                ${ticket.storyPoints != null ? `<span class="ticket-story-points">${ticket.storyPoints} SP</span>` : ''}
                                                 ${shouldShowSprint(ticket) ? `<span class="ticket-sprint">🏃 ${escapeHtml(ticket.sprint)}</span>` : ''}
                                                 ${ticket.statusCategory === 'done' && ticket.resolution ? `<span class="ticket-resolution">${escapeHtml(ticket.resolution)}</span>` : ''}
                                                 ${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? `<span class="ticket-since">${formatSince(ticket.statusChangeDate)}</span>` : ''}
@@ -4002,7 +4002,7 @@
                         ${statusHtml}
                         <span class="tree-meta">
                             ${escapeHtml(ticket.assignee)}
-                            ${ticket.storyPoints ? ` • ${ticket.storyPoints} SP` : ''}
+                            ${ticket.storyPoints != null ? ` • ${ticket.storyPoints} SP` : ''}
                             ${shouldShowSprint(ticket) ? ` • 🏃 ${escapeHtml(ticket.sprint)}` : ''}
                             ${ticket.statusCategory === 'done' && ticket.resolution ? ` • ${escapeHtml(ticket.resolution)}` : ''}
                             ${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? ` • ${formatSince(ticket.statusChangeDate)}` : ''}
@@ -4217,7 +4217,7 @@
                         statusHtml = `<span class="tree-status status-${fullSubtask.displayCategory || fullSubtask.statusCategory}">${escapeHtml(fullSubtask.status)}</span>`;
                         metaHtml = `<span class="tree-meta">
                             ${escapeHtml(fullSubtask.assignee)}
-                            ${fullSubtask.storyPoints ? ` • ${fullSubtask.storyPoints} SP` : ''}
+                            ${fullSubtask.storyPoints != null ? ` • ${fullSubtask.storyPoints} SP` : ''}
                             ${shouldShowSprint(fullSubtask) ? ` • 🏃 ${escapeHtml(fullSubtask.sprint)}` : ''}
                             ${fullSubtask.statusCategory === 'done' && fullSubtask.resolution ? ` • ${escapeHtml(fullSubtask.resolution)}` : ''}
                             ${(fullSubtask.displayCategory === 'indeterminate' || fullSubtask.displayCategory === 'review') && fullSubtask.statusChangeDate ? ` • ${formatSince(fullSubtask.statusChangeDate)}` : ''}
@@ -4268,7 +4268,7 @@
                             statusHtml = `<span class="tree-status status-${fullLinkedTicket.displayCategory || fullLinkedTicket.statusCategory}">${escapeHtml(fullLinkedTicket.status)}</span>`;
                             metaHtml = `<span class="tree-meta">
                                 ${escapeHtml(fullLinkedTicket.assignee)}
-                                ${fullLinkedTicket.storyPoints ? ` • ${fullLinkedTicket.storyPoints} SP` : ''}
+                                ${fullLinkedTicket.storyPoints != null ? ` • ${fullLinkedTicket.storyPoints} SP` : ''}
                                 ${shouldShowSprint(fullLinkedTicket) ? ` • 🏃 ${escapeHtml(fullLinkedTicket.sprint)}` : ''}
                                 ${fullLinkedTicket.statusCategory === 'done' && fullLinkedTicket.resolution ? ` • ${escapeHtml(fullLinkedTicket.resolution)}` : ''}
                                 ${(fullLinkedTicket.displayCategory === 'indeterminate' || fullLinkedTicket.displayCategory === 'review') && fullLinkedTicket.statusChangeDate ? ` • ${formatSince(fullLinkedTicket.statusChangeDate)}` : ''}
@@ -4500,7 +4500,7 @@
                                         </span>
                                     </td>
                                     <td class="table-assignee">${escapeHtml(ticket.assignee)}</td>
-                                    <td class="table-points">${ticket.storyPoints || '-'}</td>
+                                    <td class="table-points">${ticket.storyPoints != null ? ticket.storyPoints : '-'}</td>
                                     <td class="table-sprint">${shouldShowSprint(ticket) ? escapeHtml(ticket.sprint) : '-'}</td>
                                     <td class="table-since">${(ticket.displayCategory === 'indeterminate' || ticket.displayCategory === 'review') && ticket.statusChangeDate ? formatSince(ticket.statusChangeDate) : '-'}</td>
                                     <td class="table-resolution">${ticket.statusCategory === 'done' && ticket.resolution ? escapeHtml(ticket.resolution) : '-'}</td>

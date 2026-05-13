@@ -106,6 +106,72 @@ def config_status():
         'auth_mode': auth_mode
     })
 
+@app.route('/api/debug/fields', methods=['GET'])
+def debug_fields():
+    """Debug endpoint to show discovered custom fields"""
+    if not jira_client:
+        return jsonify({'error': 'JIRA not configured'}), 400
+
+    try:
+        # Force field discovery
+        estimation_field = get_estimation_field_id()
+        sprint_field = get_sprint_field_id()
+
+        # Get all custom fields from cache
+        all_fields = dict(custom_field_cache)
+
+        return jsonify({
+            'estimation_field_id': estimation_field,
+            'sprint_field_id': sprint_field,
+            'custom_field_cache': all_fields,
+            'total_custom_fields': len(all_fields)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/issue/<issue_key>', methods=['GET'])
+def debug_issue(issue_key):
+    """Debug endpoint to show raw field values for an issue"""
+    if not jira_client:
+        return jsonify({'error': 'JIRA not configured'}), 400
+
+    try:
+        estimation_field = get_estimation_field_id()
+        sprint_field = get_sprint_field_id()
+
+        # Fetch issue with all fields
+        issue = jira_client.issue(issue_key, fields='*all')
+        fields = issue.fields
+
+        # Get raw field values
+        estimation_value = getattr(fields, estimation_field, None) if estimation_field else None
+        sprint_value = getattr(fields, sprint_field, None) if sprint_field else None
+
+        # Get ALL custom field values that are not None
+        custom_fields_with_values = {}
+        for field_name, field_id in custom_field_cache.items():
+            value = getattr(fields, field_id, None)
+            if value is not None and value != '' and value != []:
+                custom_fields_with_values[field_name] = {
+                    'id': field_id,
+                    'value': str(value)[:200],  # Truncate to 200 chars
+                    'type': str(type(value))
+                }
+
+        return jsonify({
+            'issue_key': issue_key,
+            'estimation_field_id': estimation_field,
+            'estimation_value': str(estimation_value) if estimation_value is not None else None,
+            'estimation_type': str(type(estimation_value)),
+            'sprint_field_id': sprint_field,
+            'sprint_value': str(sprint_value) if sprint_value is not None else None,
+            'sprint_type': str(type(sprint_value)),
+            'custom_fields_with_values': custom_fields_with_values,
+            'total_populated_fields': len(custom_fields_with_values)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/workstreams', methods=['GET'])
 def get_workstreams():
     """Load workstreams from file"""
@@ -387,8 +453,8 @@ def get_estimation_field_id():
 
     # Option 1: Try common estimation field names
     common_names = [
-        'Story point estimate',  # Atlassian default
-        'Story Points',
+        'Story Points',  # Check this first (customfield_10028)
+        'Story point estimate',  # Atlassian default (customfield_10016)
         'Points',
         'Estimate',
         'Story points',
@@ -637,6 +703,10 @@ def parse_issue(issue):
                     # Sprint is already a dict object
                     sprint = last_sprint.get('name', 'Unknown Sprint')
                     sprint_state = (last_sprint.get('state') or '').lower()
+                else:
+                    # Handle PropertyHolder or other object types
+                    sprint = getattr(last_sprint, 'name', None) or str(last_sprint)
+                    sprint_state = (getattr(last_sprint, 'state', None) or '').lower()
 
     # Get parent and epic information
     parent_key = None
