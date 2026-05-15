@@ -261,6 +261,145 @@
             font-size: 12px;
         }
 
+        .filter-controls {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-item label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .filter-item input[type="text"],
+        .filter-item select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            min-width: 150px;
+        }
+
+        .filter-item input[type="text"]:focus,
+        .filter-item select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .filter-checkbox {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .filter-checkbox label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .filter-checkbox input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .multi-select-wrapper {
+            position: relative;
+        }
+
+        .multi-select-button {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 150px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .multi-select-button:hover {
+            border-color: var(--primary-color);
+        }
+
+        .multi-select-button::after {
+            content: '▼';
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
+        .multi-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 4px;
+            padding: 8px;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .multi-select-dropdown label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-radius: 3px;
+        }
+
+        .multi-select-dropdown label:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .multi-select-dropdown input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .clear-filters-btn {
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-filters-btn:hover {
+            background: #de350b;
+            color: white;
+            border-color: #de350b;
+        }
+
         .workstream-summary {
             margin-bottom: 20px;
             padding: 15px;
@@ -611,9 +750,22 @@
 
         .grouping-options {
             display: flex;
+            justify-content: space-between;
             gap: 16px;
             margin-top: 8px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .grouping-options-left {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .grouping-options-right {
+            display: flex;
             align-items: center;
         }
 
@@ -644,6 +796,29 @@
         .view-toggle button.active {
             background: var(--color-primary);
             color: white;
+        }
+
+        .filter-toggle-btn {
+            padding: 6px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .filter-toggle-btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--primary-color);
+        }
+
+        .filter-toggle-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
         .table-view {
@@ -1406,6 +1581,13 @@
             color: var(--color-primary);
             font-weight: 600;
             vertical-align: middle;
+        }
+
+        .filter-info {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: normal;
+            font-style: italic;
         }
 
         .query-result-content {
@@ -2619,31 +2801,80 @@
                                 }).join('')}
                             </div>
                             <div class="grouping-options">
-                                <div class="view-toggle">
-                                    <button class="${!ws.view || ws.view === 'cards' ? 'active' : ''}" onclick="setView(${index}, 'cards')">Cards</button>
-                                    <button class="${ws.view === 'compact' ? 'active' : ''}" onclick="setView(${index}, 'compact')">Table</button>
-                                    <button class="${ws.view === 'tree' ? 'active' : ''}" onclick="setView(${index}, 'tree')">Tree</button>
+                                <div class="grouping-options-left">
+                                    <div class="view-toggle">
+                                        <button class="${!ws.view || ws.view === 'cards' ? 'active' : ''}" onclick="setView(${index}, 'cards')">Cards</button>
+                                        <button class="${ws.view === 'compact' ? 'active' : ''}" onclick="setView(${index}, 'compact')">Table</button>
+                                        <button class="${ws.view === 'tree' ? 'active' : ''}" onclick="setView(${index}, 'tree')">Tree</button>
+                                    </div>
+                                    <div class="group-by-options ${ws.view === 'tree' ? 'hidden' : ''}">
+                                        <div class="group-by-toggle">
+                                            <input type="checkbox" id="groupByEpic-${index}" ${ws.groupBy === 'epic' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'epic')">
+                                            <label for="groupByEpic-${index}">Group by Epic</label>
+                                        </div>
+                                        <div class="group-by-toggle">
+                                            <input type="checkbox" id="groupByParent-${index}" ${ws.groupBy === 'parent' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'parent')">
+                                            <label for="groupByParent-${index}">Group by Parent Link</label>
+                                        </div>
+                                        <div class="group-by-toggle">
+                                            <input type="checkbox" id="groupByAssignee-${index}" ${ws.groupBy === 'assignee' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'assignee')">
+                                            <label for="groupByAssignee-${index}">Group by Assignee</label>
+                                        </div>
+                                    </div>
+                                    <div class="tree-controls ${ws.view === 'tree' ? '' : 'hidden'}">
+                                        <button onclick="expandAllTreeNodes('${ws.id}')" class="tree-control-button">Expand All</button>
+                                        <button onclick="collapseAllTreeNodes('${ws.id}')" class="tree-control-button">Collapse All</button>
+                                    </div>
                                 </div>
-                                <div class="group-by-options ${ws.view === 'tree' ? 'hidden' : ''}">
-                                    <div class="group-by-toggle">
-                                        <input type="checkbox" id="groupByEpic-${index}" ${ws.groupBy === 'epic' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'epic')">
-                                        <label for="groupByEpic-${index}">Group by Epic</label>
-                                    </div>
-                                    <div class="group-by-toggle">
-                                        <input type="checkbox" id="groupByParent-${index}" ${ws.groupBy === 'parent' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'parent')">
-                                        <label for="groupByParent-${index}">Group by Parent Link</label>
-                                    </div>
-                                    <div class="group-by-toggle">
-                                        <input type="checkbox" id="groupByAssignee-${index}" ${ws.groupBy === 'assignee' ? 'checked' : ''} onchange="toggleGroupBy(${index}, 'assignee')">
-                                        <label for="groupByAssignee-${index}">Group by Assignee</label>
+                                ${ws.tickets && ws.tickets.length > 0 ? `
+                                <div class="grouping-options-right">
+                                    <button class="filter-toggle-btn ${ws.filtersVisible ? 'active' : ''}" onclick="toggleFiltersVisibility(${index})" title="Toggle filters">🔍 Filters</button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${ws.tickets && ws.tickets.length > 0 ? `
+                        <div class="filter-controls" id="filter-controls-${index}" style="display: ${ws.filtersVisible ? 'block' : 'none'};">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="filter-search-${index}">🔍 Search</label>
+                                    <input type="text" id="filter-search-${index}" placeholder="Search in title..." oninput="applyFilters(${index})" value="${ws.filters?.search || ''}">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="filter-status-${index}">📊 Status</label>
+                                    <div class="multi-select-wrapper">
+                                        <button class="multi-select-button" onclick="toggleStatusDropdown(${index})">
+                                            ${getStatusFilterLabel(ws.filters?.statuses)}
+                                        </button>
+                                        <div id="status-dropdown-${index}" class="multi-select-dropdown" style="display: none;">
+                                            <label><input type="checkbox" value="new" ${!ws.filters?.statuses || ws.filters.statuses.includes('new') ? 'checked' : ''} onchange="updateStatusFilter(${index})"> To Do</label>
+                                            <label><input type="checkbox" value="indeterminate" ${!ws.filters?.statuses || ws.filters.statuses.includes('indeterminate') ? 'checked' : ''} onchange="updateStatusFilter(${index})"> In Progress</label>
+                                            <label><input type="checkbox" value="review" ${!ws.filters?.statuses || ws.filters.statuses.includes('review') ? 'checked' : ''} onchange="updateStatusFilter(${index})"> Review</label>
+                                            <label><input type="checkbox" value="done" ${!ws.filters?.statuses || ws.filters.statuses.includes('done') ? 'checked' : ''} onchange="updateStatusFilter(${index})"> Done</label>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="tree-controls ${ws.view === 'tree' ? '' : 'hidden'}">
-                                    <button onclick="expandAllTreeNodes('${ws.id}')" class="tree-control-button">Expand All</button>
-                                    <button onclick="collapseAllTreeNodes('${ws.id}')" class="tree-control-button">Collapse All</button>
+                                <div class="filter-item">
+                                    <label for="filter-assignee-${index}">👤 Assignee</label>
+                                    <select id="filter-assignee-${index}" onchange="applyFilters(${index})">
+                                        <option value="">All Assignees</option>
+                                        ${getAssigneeOptions(ws.tickets, ws.filters?.assignee)}
+                                    </select>
+                                </div>
+                                <div class="filter-item">
+                                    <label for="filter-story-points-${index}">📊 Story Points</label>
+                                    <select id="filter-story-points-${index}" onchange="applyFilters(${index})">
+                                        <option value="" ${!ws.filters?.storyPoints ? 'selected' : ''}>All Tickets</option>
+                                        <option value="has-points" ${ws.filters?.storyPoints === 'has-points' ? 'selected' : ''}>Story Pointed</option>
+                                        <option value="no-points" ${ws.filters?.storyPoints === 'no-points' ? 'selected' : ''}>Not Story Pointed</option>
+                                    </select>
+                                </div>
+                                <div class="filter-item">
+                                    <button class="clear-filters-btn" onclick="clearFilters(${index})" title="Clear all filters">✕ Clear</button>
                                 </div>
                             </div>
                         </div>
+                        ` : ''}
                         ${ws.summary ? `
                             <div class="workstream-summary">
                                 <div class="summary-header">
@@ -3585,6 +3816,161 @@
             }
         }
 
+        function getAssigneeOptions(tickets, selectedAssignee) {
+            const assignees = new Set();
+            tickets.forEach(t => {
+                if (t.assignee) {
+                    assignees.add(t.assignee);
+                }
+            });
+            return Array.from(assignees).sort().map(assignee =>
+                `<option value="${escapeHtml(assignee)}" ${selectedAssignee === assignee ? 'selected' : ''}>${escapeHtml(assignee)}</option>`
+            ).join('');
+        }
+
+        function getStatusFilterLabel(statuses) {
+            if (!statuses || statuses.length === 4) {
+                return 'All Statuses';
+            }
+            if (statuses.length === 0) {
+                return 'None Selected';
+            }
+            const labels = {
+                'new': 'To Do',
+                'indeterminate': 'In Progress',
+                'review': 'Review',
+                'done': 'Done'
+            };
+            return statuses.map(s => labels[s] || s).join(', ');
+        }
+
+        function toggleStatusDropdown(index) {
+            const dropdown = document.getElementById(`status-dropdown-${index}`);
+            const isVisible = dropdown.style.display !== 'none';
+
+            // Close all dropdowns first
+            document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+
+            // Toggle this one
+            dropdown.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function updateStatusFilter(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+            if (!ws.filters) ws.filters = {};
+
+            const checkboxes = document.querySelectorAll(`#status-dropdown-${index} input[type="checkbox"]`);
+            const selectedStatuses = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            ws.filters.statuses = selectedStatuses;
+
+            // Update button label
+            const dropdown = document.getElementById(`status-dropdown-${index}`);
+            const button = dropdown.previousElementSibling;
+            button.innerHTML = getStatusFilterLabel(selectedStatuses);
+
+            applyFilters(index);
+        }
+
+        function toggleFiltersVisibility(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+            ws.filtersVisible = !ws.filtersVisible;
+
+            saveWorkstreams();
+            renderWorkstreams();
+        }
+
+        function applyFilters(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+            if (!ws.filters) ws.filters = {};
+
+            // Get filter values
+            const searchInput = document.getElementById(`filter-search-${index}`);
+            const assigneeSelect = document.getElementById(`filter-assignee-${index}`);
+            const storyPointsSelect = document.getElementById(`filter-story-points-${index}`);
+
+            ws.filters.search = searchInput ? searchInput.value : '';
+            ws.filters.assignee = assigneeSelect ? assigneeSelect.value : '';
+            ws.filters.storyPoints = storyPointsSelect ? storyPointsSelect.value : '';
+
+            // Save filters
+            saveWorkstreams();
+
+            // Re-render this workstream
+            const contentDiv = document.getElementById(`workstream-content-${index}`);
+            if (contentDiv && ws.tickets) {
+                contentDiv.innerHTML = renderWorkstreamContent(ws, index);
+            }
+        }
+
+        function clearFilters(index) {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const ws = page.workstreams[index];
+            ws.filters = {
+                search: '',
+                statuses: ['new', 'indeterminate', 'review', 'done'],
+                assignee: '',
+                storyPoints: ''
+            };
+
+            saveWorkstreams();
+            renderWorkstreams();
+        }
+
+        function filterTickets(tickets, filters) {
+            if (!filters) return tickets;
+
+            return tickets.filter(ticket => {
+                // Search filter
+                if (filters.search && filters.search.trim()) {
+                    const searchLower = filters.search.toLowerCase();
+                    if (!ticket.summary.toLowerCase().includes(searchLower)) {
+                        return false;
+                    }
+                }
+
+                // Status filter
+                if (filters.statuses && filters.statuses.length > 0 && filters.statuses.length < 4) {
+                    if (!filters.statuses.includes(ticket.statusCategory)) {
+                        return false;
+                    }
+                }
+
+                // Assignee filter
+                if (filters.assignee) {
+                    if (ticket.assignee !== filters.assignee) {
+                        return false;
+                    }
+                }
+
+                // Story points filter
+                if (filters.storyPoints === 'has-points') {
+                    if (!ticket.storyPoints || ticket.storyPoints === 0) {
+                        return false;
+                    }
+                } else if (filters.storyPoints === 'no-points') {
+                    if (ticket.storyPoints && ticket.storyPoints !== 0) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+
         function moveWorkstream(index, direction) {
             const page = getCurrentPage();
             if (!page) return;
@@ -3602,6 +3988,13 @@
             saveWorkstreams();
             renderWorkstreams();
         }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.multi-select-wrapper')) {
+                document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
 
         // Drag and drop for workstream reordering
         let draggedWorkstreamIndex = null;
@@ -3838,7 +4231,12 @@
                         // For the last query, show full ticket cards; for others, show keys list
                         const isLastQuery = i === queries.length - 1;
                         if (isLastQuery) {
-                            resultContent = renderTicketsHTML(result.tickets, workstream.groupBy, workstream.view);
+                            // Apply filters to tickets before rendering
+                            const filteredTickets = filterTickets(result.tickets, workstream.filters);
+                            const filterCount = workstream.filters && (workstream.filters.search || workstream.filters.assignee || workstream.filters.storyPoints || (workstream.filters.statuses && workstream.filters.statuses.length < 4));
+                            const filterInfo = filterCount ? ` <span class="filter-info">(${filteredTickets.length} of ${result.tickets.length} shown)</span>` : '';
+                            statusContent = `<span class="query-result-count">${result.count} tickets${limitWarning}${filterInfo}</span>`;
+                            resultContent = renderTicketsHTML(filteredTickets, workstream.groupBy, workstream.view);
                         } else {
                             // Show ticket keys list for intermediate queries
                             resultContent = `<div class="ticket-keys-list">${result.tickets.map(t =>
