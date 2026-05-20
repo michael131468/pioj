@@ -3884,8 +3884,23 @@
             const ws = page.workstreams[index];
             ws.filtersVisible = !ws.filtersVisible;
 
+            // Toggle the filter controls visibility directly
+            const filterControls = document.getElementById(`filter-controls-${index}`);
+            if (filterControls) {
+                filterControls.style.display = ws.filtersVisible ? 'block' : 'none';
+            }
+
+            // Update the button styling
+            const filterButton = document.querySelector(`[onclick="toggleFiltersVisibility(${index})"]`);
+            if (filterButton) {
+                if (ws.filtersVisible) {
+                    filterButton.classList.add('active');
+                } else {
+                    filterButton.classList.remove('active');
+                }
+            }
+
             saveWorkstreams();
-            renderWorkstreams();
         }
 
         function applyFilters(index) {
