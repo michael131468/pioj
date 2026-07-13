@@ -596,6 +596,17 @@
             gap: 8px;
         }
 
+        .view-in-jira-link {
+            font-size: 12px;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-left: 8px;
+        }
+
+        .view-in-jira-link:hover {
+            text-decoration: underline;
+        }
+
         .query-display-item {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -2844,7 +2855,6 @@
                             <button id="refresh-btn-${index}" onclick="refreshWorkstream(${index})">Refresh</button>
                             <button id="cancel-btn-${index}" onclick="cancelWorkstreamRefresh(${index})" style="display: none; background: #de350b; color: white;">Cancel</button>
                             <button onclick="exportWorkstream(${index})">Export CSV</button>
-                            ${ws.tickets && ws.tickets.length > 0 ? `<button onclick="viewInJira(${index})" title="Open these tickets in JIRA">View in JIRA ↗</button>` : ''}
                             <button onclick="editWorkstream(${index})">Edit</button>
                             <button onclick="deleteWorkstream(${index})">Delete</button>
                         </div>
@@ -4485,7 +4495,9 @@
                             const wsFilterActive = workstream.filters && (workstream.filters.search || workstream.filters.assignee || workstream.filters.storyPoints || (workstream.filters.statuses && workstream.filters.statuses.length < 4));
                             const pageFilterActive = page?.filters && (page.filters.search || page.filters.assignee || page.filters.storyPoints || (page.filters.statuses && page.filters.statuses.length < 4));
                             const filterInfo = (wsFilterActive || pageFilterActive) ? ` <span class="filter-info">(${filteredTickets.length} of ${result.tickets.length} shown)</span>` : '';
-                            statusContent = `<span class="query-result-count">${result.count} tickets${limitWarning}${filterInfo}</span>`;
+                            const jiraLinkTickets = filteredTickets.length > 0 ? filteredTickets : result.tickets;
+                            const jiraLink = config.host ? ` <a href="${config.host}/issues/?jql=${encodeURIComponent('key in (' + jiraLinkTickets.map(t => t.key).join(', ') + ')')}" target="_blank" class="view-in-jira-link" title="Open in JIRA">View in JIRA ↗</a>` : '';
+                            statusContent = `<span class="query-result-count">${result.count} tickets${limitWarning}${filterInfo}${jiraLink}</span>`;
                             resultContent = renderTicketsHTML(filteredTickets, workstream.groupBy, workstream.view);
                         } else {
                             // Show ticket keys list for intermediate queries
@@ -5594,22 +5606,6 @@
             URL.revokeObjectURL(url);
 
             alert(`Exported ${workstream.tickets.length} tickets to ${filename}`);
-        }
-
-        function viewInJira(index) {
-            const page = getCurrentPage();
-            if (!page) return;
-
-            const workstream = page.workstreams[index];
-            if (!workstream.tickets || workstream.tickets.length === 0) {
-                alert('No tickets loaded. Please refresh the workstream first.');
-                return;
-            }
-
-            const keys = workstream.tickets.map(t => t.key).join(', ');
-            const jql = `key in (${keys})`;
-            const url = `${config.host}/issues/?jql=${encodeURIComponent(jql)}`;
-            window.open(url, '_blank');
         }
 
         // Recovery functions removed - all data now server-side only
