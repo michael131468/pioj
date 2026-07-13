@@ -269,6 +269,13 @@
             border-left: 3px solid var(--primary-color);
         }
 
+        .page-filter-controls {
+            margin-top: 0;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1001;
+        }
+
         .filter-row {
             display: flex;
             gap: 12px;
@@ -1942,6 +1949,47 @@
         <button onclick="document.getElementById('importConfigFile').click()">Import Config</button>
         <input type="file" id="importConfigFile" accept=".json" style="display: none;" onchange="importConfiguration(event)">
         <button class="danger" onclick="clearAll()">Clear All Data</button>
+        <button id="pageFilterToggleBtn" class="filter-toggle-btn" onclick="togglePageFiltersVisibility()" title="Page-level filters" style="margin-left: auto;">🔍 Page Filters</button>
+    </div>
+
+    <div id="pageFilterControls" class="filter-controls page-filter-controls" style="display: none;">
+        <div class="filter-row">
+            <div class="filter-item">
+                <label for="page-filter-search">🔍 Search</label>
+                <input type="text" id="page-filter-search" placeholder="Search in title across all workstreams..." oninput="applyPageFilters()">
+            </div>
+            <div class="filter-item">
+                <label>📊 Status</label>
+                <div class="multi-select-wrapper">
+                    <button class="multi-select-button" onclick="togglePageStatusDropdown()" id="pageStatusDropdownBtn">
+                        All Statuses
+                    </button>
+                    <div id="page-status-dropdown" class="multi-select-dropdown" style="display: none;">
+                        <label><input type="checkbox" value="new" checked onchange="updatePageStatusFilter()"> To Do</label>
+                        <label><input type="checkbox" value="indeterminate" checked onchange="updatePageStatusFilter()"> In Progress</label>
+                        <label><input type="checkbox" value="review" checked onchange="updatePageStatusFilter()"> Review</label>
+                        <label><input type="checkbox" value="done" checked onchange="updatePageStatusFilter()"> Done</label>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-item">
+                <label for="page-filter-assignee">👤 Assignee</label>
+                <select id="page-filter-assignee" onchange="applyPageFilters()">
+                    <option value="">All Assignees</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="page-filter-story-points">📊 Story Points</label>
+                <select id="page-filter-story-points" onchange="applyPageFilters()">
+                    <option value="">All Tickets</option>
+                    <option value="has-points">Story Pointed</option>
+                    <option value="no-points">Not Story Pointed</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <button class="clear-filters-btn" onclick="clearPageFilters()" title="Clear all page filters">✕ Clear</button>
+            </div>
+        </div>
     </div>
 
     <div id="quickNav" class="quick-nav" style="display: none;">
@@ -2102,6 +2150,7 @@
             await loadWorkstreams();
             renderTabs();
             renderWorkstreams();
+            syncPageFilterUI();
             initQuickNavPin();
         }
 
@@ -2183,6 +2232,12 @@
 
                     // Ensure workstreams have proper ticket initialization and migrate to new format
                     data.pages.forEach(page => {
+                        if (!page.filters) {
+                            page.filters = { search: '', statuses: ['new', 'indeterminate', 'review', 'done'], assignee: '', storyPoints: '' };
+                        }
+                        if (page.filtersVisible === undefined) {
+                            page.filtersVisible = false;
+                        }
                         if (page.workstreams) {
                             page.workstreams = page.workstreams.map(ws => {
                                 // Migrate workstream to new queries format
@@ -2257,7 +2312,9 @@
             const newPage = {
                 id: Date.now(),
                 name: name,
-                workstreams: []
+                workstreams: [],
+                filters: { search: '', statuses: ['new', 'indeterminate', 'review', 'done'], assignee: '', storyPoints: '' },
+                filtersVisible: false
             };
 
             data.pages.push(newPage);
@@ -2267,6 +2324,7 @@
             closeAddPageModal();
             renderTabs();
             renderWorkstreams();
+            syncPageFilterUI();
         }
 
         function switchPage(pageId) {
@@ -2274,6 +2332,7 @@
             saveWorkstreams();
             renderTabs();
             renderWorkstreams();
+            syncPageFilterUI();
         }
 
         function deletePage(pageId, event) {
@@ -3427,6 +3486,12 @@
                     }
                 }
 
+                // Update page-level assignee dropdown with any new assignees
+                const pageAssigneeSelect = document.getElementById('page-filter-assignee');
+                if (pageAssigneeSelect) {
+                    pageAssigneeSelect.innerHTML = '<option value="">All Assignees</option>' + getPageAssigneeOptions(page);
+                }
+
                 // Clean up abort controller
                 delete abortControllers[index];
             } catch (error) {
@@ -4011,6 +4076,147 @@
             });
         }
 
+        function togglePageFiltersVisibility() {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            page.filtersVisible = !page.filtersVisible;
+
+            const filterControls = document.getElementById('pageFilterControls');
+            if (filterControls) {
+                filterControls.style.display = page.filtersVisible ? 'block' : 'none';
+            }
+
+            const toggleBtn = document.getElementById('pageFilterToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.classList.toggle('active', page.filtersVisible);
+            }
+
+            saveWorkstreams();
+        }
+
+        function togglePageStatusDropdown() {
+            const dropdown = document.getElementById('page-status-dropdown');
+            const isVisible = dropdown.style.display !== 'none';
+
+            document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+
+            dropdown.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function updatePageStatusFilter() {
+            const page = getCurrentPage();
+            if (!page) return;
+            if (!page.filters) page.filters = {};
+
+            const checkboxes = document.querySelectorAll('#page-status-dropdown input[type="checkbox"]');
+            const selectedStatuses = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            page.filters.statuses = selectedStatuses;
+
+            const button = document.getElementById('pageStatusDropdownBtn');
+            if (button) {
+                button.innerHTML = getStatusFilterLabel(selectedStatuses);
+            }
+
+            applyPageFilters();
+        }
+
+        function getPageAssigneeOptions(page) {
+            const assignees = new Set();
+            (page.workstreams || []).forEach(ws => {
+                (ws.tickets || []).forEach(t => {
+                    if (t.assignee) assignees.add(t.assignee);
+                });
+            });
+            const selectedAssignee = page.filters?.assignee || '';
+            return Array.from(assignees).sort().map(assignee =>
+                `<option value="${escapeHtml(assignee)}" ${selectedAssignee === assignee ? 'selected' : ''}>${escapeHtml(assignee)}</option>`
+            ).join('');
+        }
+
+        function applyPageFilters() {
+            const page = getCurrentPage();
+            if (!page) return;
+            if (!page.filters) page.filters = {};
+
+            const searchInput = document.getElementById('page-filter-search');
+            const assigneeSelect = document.getElementById('page-filter-assignee');
+            const storyPointsSelect = document.getElementById('page-filter-story-points');
+
+            page.filters.search = searchInput ? searchInput.value : '';
+            page.filters.assignee = assigneeSelect ? assigneeSelect.value : '';
+            page.filters.storyPoints = storyPointsSelect ? storyPointsSelect.value : '';
+
+            saveWorkstreams();
+
+            page.workstreams.forEach((ws, index) => {
+                const contentDiv = document.getElementById(`workstream-content-${index}`);
+                if (contentDiv && ws.tickets) {
+                    contentDiv.innerHTML = renderWorkstreamContent(ws, index);
+                }
+            });
+        }
+
+        function clearPageFilters() {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            page.filters = {
+                search: '',
+                statuses: ['new', 'indeterminate', 'review', 'done'],
+                assignee: '',
+                storyPoints: ''
+            };
+
+            saveWorkstreams();
+            syncPageFilterUI();
+
+            page.workstreams.forEach((ws, index) => {
+                const contentDiv = document.getElementById(`workstream-content-${index}`);
+                if (contentDiv && ws.tickets) {
+                    contentDiv.innerHTML = renderWorkstreamContent(ws, index);
+                }
+            });
+        }
+
+        function syncPageFilterUI() {
+            const page = getCurrentPage();
+            if (!page) return;
+
+            const filters = page.filters || {};
+
+            const toggleBtn = document.getElementById('pageFilterToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.classList.toggle('active', !!page.filtersVisible);
+            }
+
+            const panel = document.getElementById('pageFilterControls');
+            if (panel) {
+                panel.style.display = page.filtersVisible ? 'block' : 'none';
+            }
+
+            const searchInput = document.getElementById('page-filter-search');
+            if (searchInput) searchInput.value = filters.search || '';
+
+            const checkboxes = document.querySelectorAll('#page-status-dropdown input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = !filters.statuses || filters.statuses.includes(cb.value);
+            });
+            const statusBtn = document.getElementById('pageStatusDropdownBtn');
+            if (statusBtn) statusBtn.innerHTML = getStatusFilterLabel(filters.statuses);
+
+            const assigneeSelect = document.getElementById('page-filter-assignee');
+            if (assigneeSelect) {
+                assigneeSelect.innerHTML = '<option value="">All Assignees</option>' + getPageAssigneeOptions(page);
+            }
+
+            const spSelect = document.getElementById('page-filter-story-points');
+            if (spSelect) spSelect.value = filters.storyPoints || '';
+        }
+
         function moveWorkstream(index, direction) {
             const page = getCurrentPage();
             if (!page) return;
@@ -4272,9 +4478,12 @@
                         const isLastQuery = i === queries.length - 1;
                         if (isLastQuery) {
                             // Apply filters to tickets before rendering
-                            const filteredTickets = filterTickets(result.tickets, workstream.filters);
-                            const filterCount = workstream.filters && (workstream.filters.search || workstream.filters.assignee || workstream.filters.storyPoints || (workstream.filters.statuses && workstream.filters.statuses.length < 4));
-                            const filterInfo = filterCount ? ` <span class="filter-info">(${filteredTickets.length} of ${result.tickets.length} shown)</span>` : '';
+                            const page = getCurrentPage();
+                            const pageFiltered = filterTickets(result.tickets, page?.filters);
+                            const filteredTickets = filterTickets(pageFiltered, workstream.filters);
+                            const wsFilterActive = workstream.filters && (workstream.filters.search || workstream.filters.assignee || workstream.filters.storyPoints || (workstream.filters.statuses && workstream.filters.statuses.length < 4));
+                            const pageFilterActive = page?.filters && (page.filters.search || page.filters.assignee || page.filters.storyPoints || (page.filters.statuses && page.filters.statuses.length < 4));
+                            const filterInfo = (wsFilterActive || pageFilterActive) ? ` <span class="filter-info">(${filteredTickets.length} of ${result.tickets.length} shown)</span>` : '';
                             statusContent = `<span class="query-result-count">${result.count} tickets${limitWarning}${filterInfo}</span>`;
                             resultContent = renderTicketsHTML(filteredTickets, workstream.groupBy, workstream.view);
                         } else {
