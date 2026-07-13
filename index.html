@@ -2749,13 +2749,22 @@
             `).join('');
 
             // Render workstreams
-            container.innerHTML = workstreams.map((ws, index) => {
+            container.innerHTML = workstreams.map((ws, index) => renderSingleWorkstreamHTML(ws, index, workstreams)).join('');
+
+            // Restore tree collapse state for all workstreams in tree view
+            workstreams.forEach(ws => {
+                if (ws.view === 'tree' && ws.tickets) {
+                    setTimeout(() => restoreTreeState(ws.id), 0);
+                }
+            });
+        }
+
+        function renderSingleWorkstreamHTML(ws, index, workstreams) {
                 let ticketStats = '';
                 if (ws.tickets && ws.tickets.length > 0) {
                     const total = ws.tickets.length;
                     const done = ws.tickets.filter(t => t.statusCategory === 'done').length;
                     const percentage = Math.round((done / total) * 100);
-                    // Check if any query was truncated
                     const anyTruncated = ws.queryResults && ws.queryResults.some(qr => qr.truncated);
                     const limitWarning = anyTruncated ? ' <span class="limit-warning" title="One or more queries hit the 100 ticket limit. Results may be incomplete.">⚠️ 100 ticket limit reached</span>' : '';
                     ticketStats = `<span class="ticket-count">${total} tickets • ${percentage}% done${limitWarning}</span>`;
@@ -2933,14 +2942,6 @@
                     </div>
                 </div>
             `;
-            }).join('');
-
-            // Restore tree collapse state for all workstreams in tree view
-            workstreams.forEach(ws => {
-                if (ws.view === 'tree' && ws.tickets) {
-                    setTimeout(() => restoreTreeState(ws.id), 0);
-                }
-            });
         }
 
         function editWorkstream(index) {
@@ -3262,10 +3263,10 @@
             if (!page) return;
 
             const workstream = page.workstreams[index];
-            const container = document.getElementById(`workstream-content-${index}`);
+            const getContainer = () => document.getElementById(`workstream-content-${index}`);
 
             if (!isConnected) {
-                container.innerHTML = '<div class="error">Please connect to JIRA first</div>';
+                getContainer().innerHTML = '<div class="error">Please connect to JIRA first</div>';
                 return;
             }
 
@@ -3279,14 +3280,14 @@
             if (refreshBtn) refreshBtn.style.display = 'none';
             if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
-            container.innerHTML = '<div class="loading"><span class="loading-with-spinner"><div class="spinner"></div>Loading tickets...</span></div>';
+            getContainer().innerHTML = '<div class="loading"><span class="loading-with-spinner"><div class="spinner"></div>Loading tickets...</span></div>';
 
             try {
                 // Execute queries independently (no automatic stacking)
                 const queries = workstream.queries || [];
                 if (queries.length === 0) {
                     delete abortControllers[index];
-                    container.innerHTML = '<div class="error">No queries defined</div>';
+                    getContainer().innerHTML = '<div class="error">No queries defined</div>';
                     return;
                 }
 
@@ -3294,7 +3295,7 @@
 
                 // Initialize all queries with pending state
                 workstream.queryResults = queries.map(q => ({ loading: false, pending: true }));
-                container.innerHTML = renderWorkstreamContent(workstream, index);
+                getContainer().innerHTML = renderWorkstreamContent(workstream, index);
                 if (workstream.view === 'tree') {
                     setTimeout(() => restoreTreeState(workstream.id), 0);
                 }
@@ -3309,7 +3310,7 @@
                     // Mark this query as loading
                     queryResults[i] = { loading: true };
                     workstream.queryResults = queryResults;
-                    container.innerHTML = renderWorkstreamContent(workstream, index);
+                    getContainer().innerHTML = renderWorkstreamContent(workstream, index);
                     if (workstream.view === 'tree') {
                         setTimeout(() => restoreTreeState(workstream.id), 0);
                     }
@@ -3388,7 +3389,7 @@
 
                     // Update UI after each query completes
                     workstream.queryResults = queryResults;
-                    container.innerHTML = renderWorkstreamContent(workstream, index);
+                    getContainer().innerHTML = renderWorkstreamContent(workstream, index);
                     if (workstream.view === 'tree') {
                         setTimeout(() => restoreTreeState(workstream.id), 0);
                     }
@@ -3403,15 +3404,31 @@
                 workstream.lastUpdated = new Date().toISOString();
                 saveWorkstreams();
 
-                // Final render to update header stats
-                renderWorkstreams();
+                // Update only this workstream's DOM (not full re-render, to preserve scroll and other in-flight refreshes)
+                const swimlane = document.getElementById(`workstream-${workstream.id}`);
+                if (swimlane) {
+                    swimlane.outerHTML = renderSingleWorkstreamHTML(workstream, index, page.workstreams);
+                    if (workstream.view === 'tree') {
+                        setTimeout(() => restoreTreeState(workstream.id), 0);
+                    }
+                }
+                // Update quick nav counts
+                const quickNavItems = document.getElementById('quickNavItems');
+                if (quickNavItems) {
+                    const navLinks = quickNavItems.querySelectorAll('.quick-nav-item');
+                    if (navLinks[index]) {
+                        const countSpan = navLinks[index].querySelector('.count');
+                        const countText = workstream.tickets !== undefined ? `(${workstream.tickets.length})` : '';
+                        if (countSpan) {
+                            countSpan.textContent = countText;
+                        } else if (countText) {
+                            navLinks[index].insertAdjacentHTML('beforeend', `<span class="count">${countText}</span>`);
+                        }
+                    }
+                }
 
-                // Clean up abort controller and restore buttons
+                // Clean up abort controller
                 delete abortControllers[index];
-                const refreshBtn = document.getElementById(`refresh-btn-${index}`);
-                const cancelBtn = document.getElementById(`cancel-btn-${index}`);
-                if (refreshBtn) refreshBtn.style.display = 'inline-block';
-                if (cancelBtn) cancelBtn.style.display = 'none';
             } catch (error) {
                 // Clean up abort controller and restore buttons
                 delete abortControllers[index];
@@ -3422,9 +3439,9 @@
 
                 // Handle abort error differently
                 if (error.name === 'AbortError') {
-                    container.innerHTML = '<div class="error">Query execution cancelled</div>';
+                    getContainer().innerHTML = '<div class="error">Query execution cancelled</div>';
                 } else {
-                    container.innerHTML = `<div class="error">Error: ${escapeHtml(error.message)}</div>`;
+                    getContainer().innerHTML = `<div class="error">Error: ${escapeHtml(error.message)}</div>`;
                 }
             }
         }
@@ -3942,7 +3959,15 @@
             };
 
             saveWorkstreams();
-            renderWorkstreams();
+
+            // Update only this workstream's DOM to avoid scroll jump
+            const swimlane = document.getElementById(`workstream-${ws.id}`);
+            if (swimlane) {
+                swimlane.outerHTML = renderSingleWorkstreamHTML(ws, index, page.workstreams);
+                if (ws.view === 'tree') {
+                    setTimeout(() => restoreTreeState(ws.id), 0);
+                }
+            }
         }
 
         function filterTickets(tickets, filters) {
