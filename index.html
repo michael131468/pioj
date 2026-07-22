@@ -2769,6 +2769,8 @@
             closeAddWorkstreamModal();
             renderWorkstreams();
             refreshWorkstream(page.workstreams.length - 1);
+            const newWsEl = document.getElementById(`workstream-${workstream.id}`);
+            if (newWsEl) newWsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function deleteWorkstream(index) {
@@ -2778,7 +2780,9 @@
             if (confirm('Are you sure you want to delete this workstream?')) {
                 page.workstreams.splice(index, 1);
                 saveWorkstreams();
+                const scrollY = window.scrollY;
                 renderWorkstreams();
+                window.scrollTo(0, scrollY);
             }
         }
 
@@ -3067,7 +3071,17 @@
 
                 saveWorkstreams();
                 closeAddWorkstreamModal();
-                renderWorkstreams();
+
+                const wsEl = document.getElementById(`workstream-${ws.id}`);
+                if (wsEl) {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = renderSingleWorkstreamHTML(ws, index, page.workstreams);
+                    wsEl.replaceWith(tmp.firstElementChild);
+                    const navLink = document.querySelector(`#quickNavItems a[href="#workstream-${ws.id}"]`);
+                    if (navLink) navLink.innerHTML = escapeHtml(ws.name);
+                } else {
+                    renderWorkstreams();
+                }
 
                 title.textContent = 'Add Workstream';
                 addButton.textContent = 'Add';
@@ -3618,7 +3632,18 @@
                 };
 
                 saveWorkstreams();
-                renderWorkstreams();
+
+                const wsEl = document.getElementById(`workstream-${workstream.id}`);
+                if (wsEl) {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = renderSingleWorkstreamHTML(workstream, index, page.workstreams);
+                    wsEl.replaceWith(tmp.firstElementChild);
+                    if (workstream.view === 'tree' && workstream.tickets) {
+                        setTimeout(() => restoreTreeState(workstream.id), 0);
+                    }
+                } else {
+                    renderWorkstreams();
+                }
 
             } catch (error) {
                 console.error('Summary generation error:', error);
@@ -4430,7 +4455,20 @@
             ws.view = viewType;
 
             saveWorkstreams();
-            renderWorkstreams();
+
+            // Update view toggle button active states without full re-render
+            const wsEl = document.getElementById(`workstream-${ws.id}`);
+            if (wsEl) {
+                const viewButtons = wsEl.querySelectorAll('.view-toggle button');
+                const views = ['cards', 'compact', 'tree'];
+                viewButtons.forEach((btn, i) => {
+                    btn.classList.toggle('active', views[i] === viewType || (viewType === undefined && views[i] === 'cards'));
+                });
+                const treeControls = wsEl.querySelector('.tree-controls');
+                const groupByOptions = wsEl.querySelector('.group-by-options');
+                if (treeControls) treeControls.classList.toggle('hidden', viewType !== 'tree');
+                if (groupByOptions) groupByOptions.classList.toggle('hidden', viewType === 'tree');
+            }
 
             const container = document.getElementById(`workstream-content-${index}`);
             if (ws.queryResults && ws.queryResults.length > 0) {
