@@ -50,6 +50,10 @@
             --swimlane-header-end: #5a5a5a;
         }
 
+        body.dark-mode .tree-blocker-active {
+            background: rgba(222, 53, 11, 0.15);
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
             background: var(--bg-primary);
@@ -1133,6 +1137,22 @@
 
         .tree-node-not-in-query .tree-status {
             opacity: 0.75;
+        }
+
+        .tree-blocker-active .tree-key,
+        .tree-blocker-active .tree-summary {
+            color: #de350b;
+        }
+
+        .tree-blocker-active {
+            background: rgba(222, 53, 11, 0.07);
+            border-radius: 3px;
+        }
+
+        .tree-blocker-resolved .tree-key,
+        .tree-blocker-resolved .tree-summary {
+            text-decoration: line-through;
+            opacity: 0.6;
         }
 
         .ticket-card {
@@ -5140,6 +5160,12 @@
                         const fullLinkedTicket = ticketMap[link.key];
                         const notInQuery = !queryTickets.has(link.key);
                         let statusHtml = '', metaHtml = '';
+                        const isBlockedByLink = link.type.toLowerCase().includes('is blocked');
+                        let blockerClass = '';
+                        if (isBlockedByLink) {
+                            const isDone = fullLinkedTicket && (fullLinkedTicket.statusCategory === 'done' || fullLinkedTicket.displayCategory === 'done');
+                            blockerClass = isDone ? ' tree-blocker-resolved' : ' tree-blocker-active';
+                        }
 
                         if (fullLinkedTicket && !fullLinkedTicket.isVirtual) {
                             // We have full ticket data
@@ -5158,7 +5184,7 @@
                                 ${escapeHtml(link.type)}
                             </div>
                             <div class="tree-node" style="margin-left: ${(level + 1) * 20}px;">
-                                <div class="tree-node-content${notInQuery ? ' tree-node-not-in-query' : ''}">
+                                <div class="tree-node-content${notInQuery ? ' tree-node-not-in-query' : ''}${blockerClass}">
                                     <span class="tree-toggle">•</span>
                                     <span class="tree-icon">🔗</span>
                                     <a href="${config.host}/browse/${link.key}" target="_blank" class="tree-key">
