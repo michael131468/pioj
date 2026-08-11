@@ -753,17 +753,25 @@ def parse_issue(issue):
     for link in issuelinks:
         if hasattr(link, 'outwardIssue'):
             outward = link.outwardIssue
+            outward_status_cat = ''
+            if hasattr(outward, 'fields') and hasattr(outward.fields, 'status'):
+                outward_status_cat = getattr(getattr(outward.fields.status, 'statusCategory', None), 'key', '')
             issue_links.append({
                 'type': link.type.outward if hasattr(link.type, 'outward') else '',
                 'key': outward.key if hasattr(outward, 'key') else '',
-                'summary': outward.fields.summary if hasattr(outward, 'fields') and hasattr(outward.fields, 'summary') else ''
+                'summary': outward.fields.summary if hasattr(outward, 'fields') and hasattr(outward.fields, 'summary') else '',
+                'statusCategory': outward_status_cat
             })
         if hasattr(link, 'inwardIssue'):
             inward = link.inwardIssue
+            inward_status_cat = ''
+            if hasattr(inward, 'fields') and hasattr(inward.fields, 'status'):
+                inward_status_cat = getattr(getattr(inward.fields.status, 'statusCategory', None), 'key', '')
             issue_links.append({
                 'type': link.type.inward if hasattr(link.type, 'inward') else '',
                 'key': inward.key if hasattr(inward, 'key') else '',
-                'summary': inward.fields.summary if hasattr(inward, 'fields') and hasattr(inward.fields, 'summary') else ''
+                'summary': inward.fields.summary if hasattr(inward, 'fields') and hasattr(inward.fields, 'summary') else '',
+                'statusCategory': inward_status_cat
             })
 
     # Get subtasks

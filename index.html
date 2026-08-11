@@ -5163,7 +5163,8 @@
                         const isBlockedByLink = link.type.toLowerCase().includes('is blocked');
                         let blockerClass = '';
                         if (isBlockedByLink) {
-                            const isDone = fullLinkedTicket && (fullLinkedTicket.statusCategory === 'done' || fullLinkedTicket.displayCategory === 'done');
+                            const linkedStatusCat = (fullLinkedTicket && (fullLinkedTicket.statusCategory || fullLinkedTicket.displayCategory)) || link.statusCategory || '';
+                            const isDone = linkedStatusCat === 'done';
                             blockerClass = isDone ? ' tree-blocker-resolved' : ' tree-blocker-active';
                         }
 
