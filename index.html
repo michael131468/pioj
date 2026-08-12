@@ -5160,9 +5160,10 @@
                         const fullLinkedTicket = ticketMap[link.key];
                         const notInQuery = !queryTickets.has(link.key);
                         let statusHtml = '', metaHtml = '';
-                        const isBlockedByLink = link.type.toLowerCase().includes('is blocked');
+                        const linkTypeLower = link.type.toLowerCase();
+                        const isBlockerLink = linkTypeLower.includes('is blocked') || linkTypeLower.includes('depends on');
                         let blockerClass = '';
-                        if (isBlockedByLink) {
+                        if (isBlockerLink) {
                             const linkedStatusCat = (fullLinkedTicket && (fullLinkedTicket.statusCategory || fullLinkedTicket.displayCategory)) || link.statusCategory || '';
                             const isDone = linkedStatusCat === 'done';
                             blockerClass = isDone ? ' tree-blocker-resolved' : ' tree-blocker-active';
