@@ -2204,9 +2204,16 @@
                 if (data.configured) {
                     config.host = data.host;
                     config.llm_configured = data.llm_configured || false;
-                    isConnected = true;
-                    updateConnectionStatus(true);
-                    statusDiv.innerHTML = `<span class="jira-host">Connected to JIRA: ${data.host}</span>`;
+                    if (data.jira_status === 'connected') {
+                        isConnected = true;
+                        updateConnectionStatus(true);
+                        statusDiv.innerHTML = `<span class="jira-host">Connected to JIRA: ${data.host}</span>`;
+                    } else {
+                        isConnected = false;
+                        updateConnectionStatus(false);
+                        const errDetail = data.jira_status ? data.jira_status.replace(/^error:\s*/i, '') : 'unknown error';
+                        statusDiv.innerHTML = `<span class="jira-error">JIRA auth failed (${data.host}): ${errDetail}</span>`;
+                    }
                 } else {
                     config.llm_configured = false;
                     statusDiv.innerHTML = '<span class="jira-error">JIRA not configured. Please create a .env file on the server.</span>';
@@ -3369,6 +3376,7 @@
             const workstream = page.workstreams[index];
             const getContainer = () => document.getElementById(`workstream-content-${index}`);
 
+            await checkConfig();
             if (!isConnected) {
                 getContainer().innerHTML = '<div class="error">Please connect to JIRA first</div>';
                 return;
