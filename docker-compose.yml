@@ -1,0 +1,26 @@
+services:
+  pioj:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount .env file for configuration
+      - ./.env:/app/.env:ro
+      # Mount data directory for persistent storage
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+# Alternatively, to use the pre-built image from GHCR:
+# services:
+#   pioj:
+#     image: ghcr.io/OWNER/REPO:latest
+#     ports:
+#       - "5000:5000"
+#     volumes:
+#       - ./.env:/app/.env:ro
+#       - ./data:/app/data
+#     environment:
+#       - PYTHONUNBUFFERED=1
+#     restart: unless-stopped

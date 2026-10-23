@@ -1,0 +1,50 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+*.egg-info
+build/
+dist/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables (should be mounted or passed at runtime)
+.env
+
+# Data files (should be mounted as volumes)
+workstreams.json
+workstreams_backup_*.json
+workstreams_manual_backup_*.json
+cache.json
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation and context files
+CONTEXT.md
+CLAUDE.md
+README.md
+LICENSE
+
+# Package manager artifacts
+.pdm-python
+
+# Claude Code
+.claude/
+
+# CI/CD
+.github/
+
+# Python version file
+.python-version
